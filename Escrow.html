@@ -1,0 +1,308 @@
+<!-- 
+  This HTML file is licensed under the terms of the LICENSE.
+
+  Copyright (C) [2023] [TrustLink]
+
+  You can find the full text of the license in the LICENSE file, or you can obtain it at the following URL: ./license
+
+  The license permits you to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of this software, subject to the terms and conditions specified in the license.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escrow Contract Interaction</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+</head>
+<body>
+    <h1>Interact with Escrow Smart Contract</h1>
+    <button id="connect">Connect MetaMask</button>
+    <div id="content" style="display: none;">
+        <h2>Connected Account: <span id="account"></span></h2>
+        <label for="action">Action:</label>
+        <select name="action" id="action">
+            <option value="createEscrow">Create Escrow</option>
+            <option value="fulfillEscrow">Fulfill Escrow</option>
+            <option value="negotiateEscrow">Negotiate Escrow</option>
+            <option value="getContractBalance">Get Contract Balance</option>
+        </select>
+        <br>
+        <label for="recipient">Recipient Address:</label>
+        <input type="text" name="recipient" id="recipient">
+        <br>
+        <label for="amount">Amount (in Wei):</label>
+        <input type="number" name="amount" id="amount">
+        <br>
+        <label for="escrowId">Escrow ID:</label>
+        <input type="number" name="escrowId" id="escrowId">
+        <br>
+        <button id="submit" type="button">Submit</button>
+        <!-- Add this button inside the 'content' div in your HTML file -->
+        <button id="listAddresses" type="button">List All Addresses in Contract</button>
+        <!-- Add this table inside the 'content' div in your HTML file -->
+        <table id="escrowList">
+        <thead>
+          <tr>
+            <th>Escrow ID</th>
+            <th>Depositor</th>
+            <th>Recipient</th>
+            <th>Fulfilled</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="escrowListBody">
+        </tbody>
+      </table>
+    </div>
+    <script>
+      const contractAddress = "0xF26705F16E58cD1F154F528C202d758fe99212be";
+      const abi = [
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_amount",
+				"type": "uint256"
+			}
+		],
+		"name": "createEscrow",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "EscrowCreated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "EscrowFulfilled",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "fulfillEscrow",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "negotiated_amount",
+				"type": "uint256"
+			}
+		],
+		"name": "negotiateEscrow",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "escrows",
+		"outputs": [
+			{
+				"internalType": "address payable",
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"internalType": "address payable",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isFulfilled",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getContractBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "nextEscrowId",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
+    let web3;
+    let account;
+    let contract;
+
+    async function connectMetaMask() {
+        if (typeof window.ethereum !== 'undefined') {
+            web3 = new Web3(window.ethereum);
+            try {
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                account = await web3.eth.getAccounts();
+                account = account[0];
+                contract = new web3.eth.Contract(abi, contractAddress);
+                document.getElementById("account").innerText = account;
+                document.getElementById("content").style.display = "block";
+            } catch (error) {
+                console.error(error);
+            }
+        } else {
+            alert("MetaMask not detected");
+        }
+    }
+
+    async function listAllAddresses() {
+      const escrowCount = await contract.methods.nextEscrowId().call();
+      const escrowListBody = document.getElementById("escrowListBody");
+
+      // Clear the table body
+      escrowListBody.innerHTML = "";
+
+      for (let i = 0; i < escrowCount; i++) {
+        const escrow = await contract.methods.escrows(i).call();
+
+        const row = document.createElement("tr");
+        const escrowIdCell = document.createElement("td");
+        const senderCell = document.createElement("td");
+        const recipientCell = document.createElement("td");
+        const fulfilledCell = document.createElement("td");
+        const amountCell = document.createElement("td");
+
+        escrowIdCell.innerText = i;
+        senderCell.innerText = escrow.sender;
+        recipientCell.innerText = escrow.recipient;
+        fulfilledCell.innerText = escrow.isFulfilled;
+        amountCell.innerText = escrow.amount;
+
+        row.appendChild(escrowIdCell);
+        row.appendChild(senderCell);
+        row.appendChild(recipientCell);
+        row.appendChild(fulfilledCell);
+        row.appendChild(amountCell);
+        escrowListBody.appendChild(row);
+      }
+    }
+
+
+
+    async function handleSubmit() {
+        const action = document.getElementById("action").value;
+        const recipient = document.getElementById("recipient").value;
+        const amount = document.getElementById("amount").value;
+        const escrowId = document.getElementById("escrowId").value;
+
+        switch (action) {
+            case "createEscrow":
+                await contract.methods.createEscrow(recipient, web3.utils.toBN(amount)).send({ from: account, value: web3.utils.toBN(amount) });
+                break;
+            case "fulfillEscrow":
+                await contract.methods.fulfillEscrow(escrowId).send({ from: account });
+                break;
+            case "negotiateEscrow":
+                await contract.methods.negotiateEscrow(escrowId, web3.utils.toBN(amount)).send({ from: account });
+                break;
+            case "getContractBalance":
+                const balance = await contract.methods.getContractBalance().call();
+                alert(`Contract balance: ${web3.utils.fromWei(balance, 'ether')} ETH`);
+                break;
+            default:
+                alert("Invalid action selected");
+        }
+    }
+    document.getElementById("listAddresses").addEventListener("click", listAllAddresses);
+    document.getElementById("connect").addEventListener("click", connectMetaMask);
+    document.getElementById("submit").addEventListener("click", handleSubmit);
+</script>
+</body>
+</html>
