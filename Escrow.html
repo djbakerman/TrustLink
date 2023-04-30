@@ -50,6 +50,7 @@
             <th>Recipient</th>
             <th>Fulfilled</th>
             <th>Amount</th>
+            <th>Settled Amount</th>
           </tr>
         </thead>
         <tbody id="escrowListBody">
@@ -57,7 +58,7 @@
       </table>
     </div>
     <script>
-      const contractAddress = "0xF26705F16E58cD1F154F528C202d758fe99212be";
+      const contractAddress = "0x1ABF8B9ad47CEdc0bAB847a1C4c2Ef7fC65283C4";
       const abi = [
 	{
 		"inputs": [
@@ -149,7 +150,7 @@
 			},
 			{
 				"internalType": "uint256",
-				"name": "negotiated_amount",
+				"name": "_negotiatedAmount",
 				"type": "uint256"
 			}
 		],
@@ -181,6 +182,11 @@
 			{
 				"internalType": "uint256",
 				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "negotiated_amount",
 				"type": "uint256"
 			},
 			{
@@ -258,18 +264,24 @@
         const recipientCell = document.createElement("td");
         const fulfilledCell = document.createElement("td");
         const amountCell = document.createElement("td");
+        const negotiatedAmountCell = document.createElement("td");
 
         escrowIdCell.innerText = i;
         senderCell.innerText = escrow.sender;
         recipientCell.innerText = escrow.recipient;
         fulfilledCell.innerText = escrow.isFulfilled;
         amountCell.innerText = escrow.amount;
+        if (escrow.negotiated_amount == 0)
+          negotiatedAmountCell.innerText = escrow.amount;
+        else
+          negotiatedAmountCell.innerText = escrow.negotiated_amount;
 
         row.appendChild(escrowIdCell);
         row.appendChild(senderCell);
         row.appendChild(recipientCell);
         row.appendChild(fulfilledCell);
         row.appendChild(amountCell);
+        row.appendChild(negotiatedAmountCell);
         escrowListBody.appendChild(row);
       }
     }
