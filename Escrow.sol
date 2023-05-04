@@ -4,9 +4,11 @@
 
 pragma solidity ^0.8.0;
 
+import "./IEscrow.sol";
+
 // The Escrow contract is a simple escrow contract where the sender can create
 // an escrow, and the sender and recipient can negotiate the amount to be released.
-contract Escrow {
+contract Escrow is IEscrow {
     // EscrowInfo struct contains all the details of a specific escrow instance.
     struct EscrowInfo {
         address payable sender;
