@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI Interaction</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.9.0/web3.min.js"></script>
+</head>
+<body>
+    <h1>KPI Interaction</h1>
+	<div id="walletConnectionStatus">Not connected to wallet</div>
+    <div id="kpiInfo" style="display: none;"></div>
+    <button id="connectWallet">Connect Wallet</button>
+    <h2>Create KPI Point</h2>
+    <label for="kpiThreshold">KPI Threshold:</label>
+    <input type="number" id="kpiThreshold" name="kpiThreshold">
+    <br>
+    <label for="kpiPath">KPI Path:</label>
+    <input type="text" id="kpiPath" name="kpiPath">
+    <br>
+    <button id="createKPI">Create KPI Point</button>
+
+    <h2>Fetch KPI Point Value</h2>
+    <label for="kpiIdUpdate">KPI ID:</label>
+    <input type="text" id="kpiIdUpdate" name="kpiIdUpdate">
+    <br>
+    <label for="newValue">New Value:</label>
+    <input type="number" id="newValue" name="newValue">
+    <br>
+    <button id="updateKPI">Fetch KPI Point Value</button>
+
+    <h2>Delete KPI Point</h2>
+    <label for="kpiIdDelete">KPI ID:</label>
+    <input type="text" id="kpiIdDelete" name="kpiIdDelete">
+    <br>
+    <button id="deleteKPI">Delete KPI Point</button>
+
+    <h2>Get KPI Point Last Value</h2>
+    <label for="kpiIdGet">KPI ID:</label>
+    <input type="text" id="kpiIdGet" name="kpiIdGet">
+    <br>
+    <button id="getKPI">Get KPI Point Last Value</button>
+    <pre id="kpiDetails"></pre>
+	
+	<h2>Get All KPI Points:</h2>
+	<button id="listKPIs">List All KPI Points</button>
+	<div id="kpisList"></div>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const contractAddress = urlParams.get('contract');
+    const escrowId = urlParams.get('escrowId');
+
+    if (!contractAddress || !escrowId) {
+      alert('Contract address and escrow ID are required.');
+      window.location.href = 'Escrow.php';
+    }
+    
+    let web3;
+    let kpiContract;
+    let userAddress;
+    
+    const connectWalletButton = document.getElementById('connectWallet');
+
+        async function init() {
+    		if (window.ethereum) {
+        		web3 = new Web3(window.ethereum);
+        		await window.ethereum.request({ method: 'eth_requestAccounts' });
+        		account = (await web3.eth.getAccounts())[0];
+        		kpiContract = new web3.eth.Contract(abi, contractAddress);
+
+        		// Fetch the Escrow contract address
+        		const escrowAddress = await kpiContract.methods.escrow().call();
+        		const escrowContract = new web3.eth.Contract(escrowAbi, escrowAddress);
+
+        		// Fetch the Escrow owner
+        		const escrows = await escrowContract.methods.escrows(escrowId).call();
+				const sender = escrows.sender;
+
+        		// Fetch all the Escrow recipients
+        		const recipients = await escrowContract.methods.getEscrowRecipients(escrowId).call();
+        		//alert(recipients);
+        		// Verify the account is the same as the Escrow owner or a recipient
+        		const isOwner = account.toLowerCase() === sender.toLowerCase();
+        		const isRecipient = recipients.some(recipient => account.toLowerCase() === recipient.toLowerCase());
+
+        		if (!isOwner && !isRecipient) {
+            		alert('Connected account does not match the Escrow owner or any recipient.');
+            		window.location.href = 'Escrow.php';
+        		}
+
+        		// Hide the Connect Wallet button
+        		connectWalletButton.style.display = 'none';
+				
+				// Hide the "Not connected to wallet" message
+    			document.getElementById('walletConnectionStatus').style.display = 'none';
+
+				
+				// Show and populate the KPI information
+            const kpiInfo = document.getElementById('kpiInfo');
+            kpiInfo.style.display = 'block';
+            const data = {
+                "KPI Contract": contractAddress,
+                "Escrow Contract": escrowAddress,
+                "EscrowID": escrowId,
+                "Escrow Sender": sender,
+                "Escrow Recipients": recipients.join('<br>')
+            };
+
+            for (const key in data) {
+                const p = document.createElement('p');
+                p.className = 'kpi-info';
+                const label = document.createElement('span');
+                label.className = 'kpi-label';
+                label.innerText = key + ': ';
+                p.appendChild(label);
+                const value = document.createElement('span');
+                value.className = 'kpi-value';
+                value.innerHTML = data[key];
+                p.appendChild(value);
+                kpiInfo.appendChild(p);
+            }
+    		} else {
+        		alert('Please install MetaMask or another web3-compatible wallet to interact with this page.');
+    		}
+		}
+
+        const kpiContractAddress = await loadContractAddress();
+        const kpiContractABI = await loadContractABI();
+        connectWalletButton.onclick = init;
+        kpiContract = new web3.eth.Contract(kpiContractABI, kpiContractAddress);
+
+        document.getElementById("connectWallet").addEventListener("click", connectWallet);
+        document.getElementById("createKPI").addEventListener("click", createKPIPoint);
+        document.getElementById("updateKPI").addEventListener("click", fetchKPIPointValue);
+        document.getElementById("deleteKPI").addEventListener("click", deleteKPIPoint);
+        document.getElementById("getKPI").addEventListener("click", getKPIPointLastValue);
+		document.getElementById("listKPIs").addEventListener("click", getAllKPIPoints);
+    });
+
+    async function connectWallet() {
+        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+        userAddress = accounts[0];
+        document.getElementById("walletConnectionStatus").innerText = "Connected to wallet";
+    }
+
+    async function createKPIPoint() {
+        const kpiThreshold = document.getElementById("kpiThreshold").value;
+        const kpiPath = document.getElementById("kpiPath").value;
+        await kpiContract.methods.createKPIPoint(kpiThreshold, kpiPath).send({ from: userAddress });
+    }
+
+    async function fetchKPIPointValue() {
+        const kpiId = document.getElementById("kpiIdUpdate").value;
+        const newValue = document.getElementById("newValue").value;
+        await kpiContract.methods.fetchKPIPointValue(kpiId, newValue).send({ from: userAddress });
+    }
+
+    async function deleteKPIPoint() {
+        const kpiId = document.getElementById("kpiIdDelete").value;
+        await kpiContract.methods.deleteKPIPoint(kpiId).send({ from: userAddress });
+    }
+
+    async function getKPIPointLastValue() {
+        const kpiId = document.getElementById("kpiIdGet").value;
+        const kpiDetails = await kpiContract.methods.getKPIPointLastValue(kpiId).call({ from: userAddress });
+        document.getElementById("kpiDetails").innerText = JSON.stringify(kpiDetails, null, 2);
+    }
+
+	async function getAllKPIPoints() {
+		const kpiList = await kpiContract.methods.getAllKPIPoints().call({ from: userAddress });
+		document.getElementById("kpisList").innerText = JSON.stringify(kpiList, null, 2);
+	}
+    
+    async function loadContractAddress() {
+    const response = await fetch("kpiContractAddress.abi");
+    const data = await response.text();
+    return data.trim();
+}
+
+async function loadContractABI() {
+    const response = await fetch("kpiContractABI.abi");
+    const data = await response.json();
+    return data;
+}
+</script>
+</body>
+</html>
