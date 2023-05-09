@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: LicenseRef-Proprietary
 // see LICENSE in the source repository
-//working version
 
 pragma solidity ^0.8.0;
 
@@ -9,9 +8,14 @@ interface IEscrow {
     // Creates a new escrow with the specified recipients and amount, and returns the escrow ID.
     function createEscrow(address[] calldata _recipients, uint256 _amount) external payable returns (uint256);
 
+    // Checks if the escrow with the specified ID is fulfilled.
     function isFulfilled(uint256 _escrowId) external view returns (bool);
     
+    // Sets the KPI contract address for the specified escrow ID.
     function setKPIContractAddress(uint256 _escrowId, address _kpiContractAddress) external;
+
+    // Gets the KPI contract address associated with the specified escrow ID.
+    function getKPIContractAddress(uint256 _escrowId) external view returns (address);
 
     // Allows the sender or recipient to negotiate the amount to be released from the escrow.
     function negotiateEscrow(uint256 _escrowId, uint256 _negotiatedAmount) external;
@@ -37,6 +41,6 @@ interface IEscrow {
     // Emitted when an escrow is fulfilled.
     event EscrowFulfilled(uint256 indexed escrowId);
 
-    // Add the new KPIContractAddressSet event
+    // Emitted when the KPI contract address is set for an escrow.
     event KPIContractAddressSet(uint256 indexed escrowId, address indexed kpiContractAddress);
 }
