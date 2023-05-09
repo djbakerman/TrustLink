@@ -25,7 +25,6 @@ contract Escrow is IEscrow {
     mapping(uint256 => address) public kpiContractAddresses;
 
     // Creates a new escrow with the provided recipients, amount, and KPIs, and stores it in the mapping.
-    // Returns the escrow ID.
     function createEscrow(address[] memory _recipients, uint256 _amount) public payable returns (uint256) {
         require(msg.value == _amount, "Amount sent does not match the specified amount.");
         require(_recipients.length > 0, "At least one recipient is required.");
@@ -59,7 +58,6 @@ contract Escrow is IEscrow {
     } // end of _toPayableArray
 
     // Allows the sender or recipient to negotiate the amount to be released from the escrow.
-    // Updates the negotiated amount and distributes the funds accordingly.
     function negotiateEscrow(uint256 _escrowId, uint256 _negotiatedAmount) public {
         require(_escrowId < nextEscrowId, "Invalid escrow ID.");
         EscrowInfo storage escrow = escrows[_escrowId];
@@ -68,7 +66,7 @@ contract Escrow is IEscrow {
         require(msg.sender == escrow.sender || isRecipient(msg.sender, escrow.recipients), "Only the sender or recipient can negotiate the escrow.");
         require(_negotiatedAmount <= escrow.amount, "Negotiated amount must be less than or equal to the escrow amount.");
 
-                // Update the negotiated amount and distribute the funds accordingly
+        // Update the negotiated amount and distribute the funds accordingly
         escrow.negotiated_amount = _negotiatedAmount;
 
         uint256 remaining_amount = escrow.amount - escrow.negotiated_amount;
@@ -100,7 +98,6 @@ contract Escrow is IEscrow {
     } // end of isRecipient
 
     // Allows the sender to fulfill the escrow, releasing the negotiated or full amount to the recipient.
-    // Returns true if the escrow is successfully fulfilled.
     function fulfillEscrow(uint256 _escrowId) public returns (bool) {
         require(_escrowId < nextEscrowId, "Invalid escrow ID.");
         EscrowInfo storage escrow = escrows[_escrowId];
@@ -132,13 +129,16 @@ contract Escrow is IEscrow {
         return nextEscrowId;
     }   // end of getNextEscrowId
 
-    // Sets the KPI contract address associated with the specified escrow ID
     function setKPIContractAddress(uint256 _escrowId, address _kpiContractAddress) public {
         require(kpiContractAddresses[_escrowId] == address(0), "KPI contract address is already set for this escrow.");
         kpiContractAddresses[_escrowId] = _kpiContractAddress;
 
-                // Emit the KPIContractAddressSet event
+        // Emit the KPIContractAddressSet event
         emit KPIContractAddressSet(_escrowId, _kpiContractAddress);
+    }
+
+    function getKPIContractAddress(uint256 _escrowId) external view returns (address) {
+        return kpiContractAddresses[_escrowId];
     }
 
     // Returns the recipients of the specified escrow
