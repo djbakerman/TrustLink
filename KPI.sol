@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 import "./IKPI.sol";
 import "./IEscrow.sol";
 
+// The KPI contract is responsible for managing KPIs related to escrow contracts.
 contract KPI is IKPI {
     // KPIInfo struct contains all the details of a specific KPI instance.
     struct KPIInfo {
@@ -28,6 +29,7 @@ contract KPI is IKPI {
     // A mapping to store an array of KPIs for each escrowId.
     mapping(uint256 => bytes32[]) public escrowKPIs;
 
+    // Constructor to set the Escrow contract address
     constructor(address _escrow) {
         escrow = IEscrow(_escrow);
     }
@@ -62,8 +64,11 @@ contract KPI is IKPI {
         kpis[kpiId] = newKPI;
         escrowKPIs[_escrowId].push(kpiId);
 
-        // Set the KPI contract address for the corresponding escrowId in the Escrow contract
-        escrow.setKPIContractAddress(_escrowId, address(this));
+        // Check if the KPI contract address is already set for the specified escrowId, if not, set it
+        address currentKPIContractAddress = escrow.getKPIContractAddress(_escrowId);
+        if (currentKPIContractAddress == address(0)) {
+            escrow.setKPIContractAddress(_escrowId, address(this));
+        }
 
         // Emit the KPICreated event
         emit KPICreated(kpiId, _kpiThreshold, _kpiPath, _kpiUrl);
@@ -71,14 +76,15 @@ contract KPI is IKPI {
         return kpiId;
     } // end of createKPIPoint
 
-    // Updates the KPI value and checks if the KPI has been violated.
+        // Updates the KPI value and checks if the KPI has been violated.
     function fetchKPIPointValue(bytes32 _kpiId, uint256 _newValue) external override {
         KPIInfo storage kpi = kpis[_kpiId];
         require(kpi.kpiId != 0, "KPI does not exist.");
 
         kpi.kpiValue = _newValue;
         kpi.kpiViolationStatus = _newValue >= kpi.kpiThreshold;
-                if (kpi.kpiViolationStatus) {
+        
+        if (kpi.kpiViolationStatus) {
             kpi.kpiViolationPaid = escrow.fulfillEscrow(kpi.escrowId);
         }
 
@@ -137,4 +143,4 @@ contract KPI is IKPI {
         kpiPath = kpi.kpiPath;
         kpiViolationStatus = kpi.kpiViolationStatus;
     } // end of getKPILastValue
-}
+} 
