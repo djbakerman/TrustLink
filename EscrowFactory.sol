@@ -12,7 +12,7 @@ contract EscrowFactory {
     mapping(address => address[]) public escrowContracts;
 
     // Event emitted when a new Escrow contract is created
-    event EscrowCreated(address indexed sender, address escrowAddress);
+    event EscrowContractCreated(address indexed sender, address escrowAddress);
 
     // Creates a new Escrow contract with the provided recipients and amount and stores its address in the mapping.
     function createEscrowContract(address[] memory _recipients, uint256 _amount) public payable returns (address) {
@@ -25,7 +25,7 @@ contract EscrowFactory {
         // Store the deployed Escrow contract address in the mapping
         escrowContracts[msg.sender].push(address(newEscrow));
 
-        emit EscrowCreated(msg.sender, address(newEscrow));
+        emit EscrowContractCreated(msg.sender, address(newEscrow));
 
         return address(newEscrow);
     }
