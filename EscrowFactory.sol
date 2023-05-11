@@ -15,7 +15,7 @@ contract EscrowFactory {
     event EscrowCreated(address indexed sender, address escrowAddress);
 
     // Creates a new Escrow contract with the provided recipients and amount and stores its address in the mapping.
-    function createEscrow(address[] memory _recipients, uint256 _amount) public payable returns (address) {
+    function createEscrowContract(address[] memory _recipients, uint256 _amount) public payable returns (address) {
         require(msg.value == _amount, "Amount sent does not match the specified amount.");
         require(_recipients.length > 0, "At least one recipient is required.");
 
@@ -34,4 +34,4 @@ contract EscrowFactory {
     function getDeployedEscrows(address _sender) public view returns (address[] memory) {
         return escrowContracts[_sender];
     }
-} //EscrowFactory
+}
