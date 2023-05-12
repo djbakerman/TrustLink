@@ -22,6 +22,10 @@ contract KPI is IKPI {
     }
 
     IEscrow public escrow;
+    
+    constructor(address _escrow) {
+        escrow = IEscrow(_escrow);
+    }
 
     // A mapping to store KPIs with their respective kpiIds.
     mapping(bytes32 => KPIInfo) public kpis;
