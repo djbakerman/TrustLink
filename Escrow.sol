@@ -22,10 +22,23 @@ contract Escrow is IEscrow {
     uint256 public nextEscrowId;
 
     // A mapping of escrowId to KPI Contracs
-    mapping(uint256 => address) public kpiContractAddresses;
+    mapping(address => address) public kpiContractAddresses;
+
+    // The address of the EscrowFactory that is allowed to create new escrows.
+    address public escrowFactory;
+
+    constructor(address _escrowFactory) {
+        escrowFactory = _escrowFactory;
+    }
+
+    // Modifier to ensure only the EscrowFactory can call certain functions
+    modifier onlyFactory() {
+        require(msg.sender == escrowFactory, "Only the EscrowFactory can perform this action.");
+        _;
+    }
 
     // Creates a new escrow with the provided recipients, amount, and KPIs, and stores it in the mapping.
-    function createEscrow(address[] memory _recipients, uint256 _amount) public payable returns (uint256) {
+    function createEscrowContract(address[] memory _recipients, uint256 _amount) public payable onlyFactory returns (uint256) {
         require(msg.value == _amount, "Amount sent does not match the specified amount.");
         require(_recipients.length > 0, "At least one recipient is required.");
 
@@ -129,16 +142,16 @@ contract Escrow is IEscrow {
         return nextEscrowId;
     }   // end of getNextEscrowId
 
-    function setKPIContractAddress(uint256 _escrowId, address _kpiContractAddress) public {
-        require(kpiContractAddresses[_escrowId] == address(0), "KPI contract address is already set for this escrow.");
-        kpiContractAddresses[_escrowId] = _kpiContractAddress;
+    function setKPIContractAddress(address _kpiContractAddress) public {
+        require(kpiContractAddresses[msg.sender] == address(0), "KPI contract address is already set for this sender.");
+        kpiContractAddresses[msg.sender] = _kpiContractAddress;
 
         // Emit the KPIContractAddressSet event
-        emit KPIContractAddressSet(_escrowId, _kpiContractAddress);
+        emit KPIContractAddressSet(msg.sender, _kpiContractAddress);
     }
 
-    function getKPIContractAddress(uint256 _escrowId) external view returns (address) {
-        return kpiContractAddresses[_escrowId];
+    function getKPIContractAddress() external view returns (address) {
+        return kpiContractAddresses[msg.sender];
     }
 
     // Returns the recipients of the specified escrow
