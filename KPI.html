@@ -18,7 +18,10 @@
     <label for="kpiPath">KPI Path:</label>
     <input type="text" id="kpiPath" name="kpiPath">
     <br>
-    <button id="createKPI">Create KPI Point</button>
+    <label for="kpiUrl">KPI URL:</label>
+    <input type="text" id="kpiUrl" name="kpiUrl">
+    <br>
+    <button id="createKPI">Create KPI Point Value</button>
 
     <h2>Fetch KPI Point Value</h2>
     <label for="kpiIdUpdate">KPI ID:</label>
@@ -58,6 +61,609 @@
     let web3;
     let kpiContract;
     let userAddress;
+    const kpiContractABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_kpiThreshold",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "_kpiPath",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_kpiUrl",
+				"type": "string"
+			}
+		],
+		"name": "createKPIPoint",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_kpiId",
+				"type": "bytes32"
+			}
+		],
+		"name": "deleteKPIPoint",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_kpiId",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_newValue",
+				"type": "uint256"
+			}
+		],
+		"name": "fetchKPIPointValue",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_escrow",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "kpiId",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "kpiThreshold",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "kpiPath",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "kpiUrl",
+				"type": "string"
+			}
+		],
+		"name": "KPICreated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "kpiId",
+				"type": "bytes32"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "KPIDeleted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "kpiId",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "kpiValue",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "kpiViolationStatus",
+				"type": "bool"
+			}
+		],
+		"name": "KPIUpdated",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "escrow",
+		"outputs": [
+			{
+				"internalType": "contract IEscrow",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "escrowKPIs",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "getEscrowKPIs",
+		"outputs": [
+			{
+				"internalType": "bytes32[]",
+				"name": "",
+				"type": "bytes32[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_kpiId",
+				"type": "bytes32"
+			}
+		],
+		"name": "getKPILastValue",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "kpiThreshold",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "kpiValue",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "kpiPath",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "kpiViolationStatus",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "kpis",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "kpiId",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "kpiThreshold",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "kpiValue",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "kpiPath",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "kpiUrl",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "kpiViolationStatus",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "kpiViolationPaid",
+				"type": "bool"
+			},
+			{
+				"internalType": "address",
+				"name": "escrowContract",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
+
+//////////////////////
+
+//////////////////////
+
+//////////////////////
+
+//////////////////////
+
+//////////////////////
+
+//////////////////////
+
+    const escrowContractABI = [
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "EscrowCreated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "EscrowFulfilled",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "kpiContractAddress",
+				"type": "address"
+			}
+		],
+		"name": "KPIContractAddressSet",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			}
+		],
+		"name": "RecipientAdded",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address[]",
+				"name": "_recipients",
+				"type": "address[]"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_amount",
+				"type": "uint256"
+			}
+		],
+		"name": "createEscrow",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "escrows",
+		"outputs": [
+			{
+				"internalType": "address payable",
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "negotiated_amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isFulfilled",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "fulfillEscrow",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getContractBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "getEscrowRecipients",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getNextEscrowId",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "isFulfilled",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "kpiContractAddresses",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_negotiatedAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "negotiateEscrow",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "nextEscrowId",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "_kpiContractAddress",
+				"type": "address"
+			}
+		],
+		"name": "setKPIContractAddress",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+];
     
     const connectWalletButton = document.getElementById('connectWallet');
 
@@ -66,11 +672,12 @@
         		web3 = new Web3(window.ethereum);
         		await window.ethereum.request({ method: 'eth_requestAccounts' });
         		account = (await web3.eth.getAccounts())[0];
-        		kpiContract = new web3.eth.Contract(abi, contractAddress);
+				userAddress = (await web3.eth.getAccounts())[0];
+        		kpiContract = new web3.eth.Contract(kpiContractABI, contractAddress);
 
         		// Fetch the Escrow contract address
         		const escrowAddress = await kpiContract.methods.escrow().call();
-        		const escrowContract = new web3.eth.Contract(escrowAbi, escrowAddress);
+        		const escrowContract = new web3.eth.Contract(escrowContractABI, escrowAddress);
 
         		// Fetch the Escrow owner
         		const escrows = await escrowContract.methods.escrows(escrowId).call();
@@ -124,29 +731,12 @@
     		}
 		}
 
-        const kpiContractAddress = await loadContractAddress();
-        const kpiContractABI = await loadContractABI();
-        connectWalletButton.onclick = init;
-        kpiContract = new web3.eth.Contract(kpiContractABI, kpiContractAddress);
-
-        document.getElementById("connectWallet").addEventListener("click", connectWallet);
-        document.getElementById("createKPI").addEventListener("click", createKPIPoint);
-        document.getElementById("updateKPI").addEventListener("click", fetchKPIPointValue);
-        document.getElementById("deleteKPI").addEventListener("click", deleteKPIPoint);
-        document.getElementById("getKPI").addEventListener("click", getKPIPointLastValue);
-		document.getElementById("listKPIs").addEventListener("click", getAllKPIPoints);
-    });
-
-    async function connectWallet() {
-        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-        userAddress = accounts[0];
-        document.getElementById("walletConnectionStatus").innerText = "Connected to wallet";
-    }
-
     async function createKPIPoint() {
+		console.log(escrowId);
         const kpiThreshold = document.getElementById("kpiThreshold").value;
         const kpiPath = document.getElementById("kpiPath").value;
-        await kpiContract.methods.createKPIPoint(kpiThreshold, kpiPath).send({ from: userAddress });
+		const kpiUrl = document.getElementById("kpiUrl").value;
+        await kpiContract.methods.createKPIPoint(kpiThreshold, kpiPath, escrowId, kpiUrl).send({ from: userAddress });
     }
 
     async function fetchKPIPointValue() {
@@ -167,21 +757,36 @@
     }
 
 	async function getAllKPIPoints() {
-		const kpiList = await kpiContract.methods.getAllKPIPoints().call({ from: userAddress });
-		document.getElementById("kpisList").innerText = JSON.stringify(kpiList, null, 2);
+		
+		const kpiIds = await kpiContract.methods.getEscrowKPIs(escrowId).call();
+    		//console.log(kpiIds);
+			
+			const kpisListElement = document.getElementById('kpisList');
+    		kpisListElement.innerHTML = '';
+
+    		for (const kpiId of kpiIds) {
+        		const kpi = await kpiContract.methods.getKPI(kpiId).call();
+        		const kpiElement = document.createElement('p');
+        		kpiElement.innerHTML = `
+            		KPI ID: ${kpiId}<br>
+            		Threshold: ${kpi.kpiThreshold}<br>
+            		Value: ${kpi.kpiValue}<br>
+            		Path: ${kpi.kpiPath}<br>
+            		Violation Status: ${kpi.kpiViolationStatus}
+        		`;
+        		kpisListElement.appendChild(kpiElement);
+    		}
 	}
     
-    async function loadContractAddress() {
-    const response = await fetch("kpiContractAddress.abi");
-    const data = await response.text();
-    return data.trim();
-}
+    connectWalletButton.onclick = init;
+        
+        document.getElementById("connectWallet").addEventListener("click", init);
+        document.getElementById("createKPI").addEventListener("click", createKPIPoint);
+        document.getElementById("updateKPI").addEventListener("click", fetchKPIPointValue);
+        document.getElementById("deleteKPI").addEventListener("click", deleteKPIPoint);
+        document.getElementById("getKPI").addEventListener("click", getKPIPointLastValue);
+		document.getElementById("listKPIs").addEventListener("click", getAllKPIPoints);
 
-async function loadContractABI() {
-    const response = await fetch("kpiContractABI.abi");
-    const data = await response.json();
-    return data;
-}
 </script>
 </body>
 </html>
