@@ -11,61 +11,53 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escrow Contract Interaction</title>
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.9.0/web3.min.js"></script>
 </head>
 <body>
-    <h1>Interact with Escrow Smart Contract</h1>
+    <h1>Escrow Contract Interaction</h1>
     <button id="connect">Connect MetaMask</button>
-    <div id="content" style="display: none;">
-        <h2>Connected Account: <span id="account"></span></h2>
-        <label for="action">Action:</label>
-        <select name="action" id="action">
-            <option value="createEscrow">Create Escrow</option>
-            <option value="fulfillEscrow">Fulfill Escrow</option>
-            <option value="negotiateEscrow">Negotiate Escrow</option>
-            <option value="getContractBalance">Get Contract Balance</option>
-        </select>
-        <br>
-        <label for="recipient">Recipient Address:</label>
-        <input type="text" name="recipient" id="recipient">
-        <br>
-        <label for="amount">Amount (in Wei):</label>
-        <input type="number" name="amount" id="amount">
-        <br>
-        <label for="escrowId">Escrow ID:</label>
-        <input type="number" name="escrowId" id="escrowId">
-        <br>
-        <button id="submit" type="button">Submit</button>
-        <!-- Add this button inside the 'content' div in your HTML file -->
-        <button id="listAddresses" type="button">List All Addresses in Contract</button>
-        <!-- Add this table inside the 'content' div in your HTML file -->
-        <table id="escrowList">
-        <thead>
-          <tr>
-            <th>Escrow ID</th>
-            <th>Depositor</th>
-            <th>Recipient</th>
-            <th>Fulfilled</th>
-            <th>Amount</th>
-            <th>Settled Amount</th>
-          </tr>
-        </thead>
-        <tbody id="escrowListBody">
-        </tbody>
-      </table>
-    </div>
+    <button id="disconnect" disabled>Disconnect MetaMask</button>
+	<h2>Connected Account: <span id="account"></span></h2>
+    <h2>Create Escrow</h2>
+    <label for="recipients">Recipients (comma separated):</label>
+    <input type="text" id="recipients" placeholder="0xRecipient1,0xRecipient2">
+    <label for="amount">Amount (ETH):</label>
+    <input type="number" id="amount" min="0" step="any">
+    <button id="createEscrow">Create Escrow</button>
+    <h2>Negotiate Escrow</h2>
+    <label for="negotiatedAmount">Escrow ID:</label>
+    <input type="number" id="negotiatedEscrowId" min="0">
+    <label for="negotiatedAmount">Negotiated Amount (ETH):</label>
+    <input type="number" id="negotiatedAmount" min="0" step="any">
+    <button id="negotiateEscrow">Negotiate Escrow</button>
+    <h2>Fulfill Escrow</h2>
+    <label for="fulfillEscrowId">Escrow ID:</label>
+    <input type="number" id="fulfillEscrowId" min="0">
+    <button id="fulfillEscrow">Fulfill Escrow</button>
+    <h2>Contract Balance</h2>
+    <button id="getBalance">Get Balance</button>
+    <p id="balance"></p>
+    <h2>Get Escrow Info</h2>
+    <label for="displayEscrowInfoById">Escrow ID:</label>
+    <input type="number" id="escrowInfoId" name="escrowInfoId" placeholder="Enter escrow ID">
+    <button id="displayEscrowInfoById">Get Escrow Info</button>
+    <p id="escrowInfo"></p>
+    <h2>Get Next Escrow ID</h2>
+    <button id="getNextEscrowId" onclick="displayNextEscrowId()">Get Next Escrow ID</button>
+    <p id="nextId"></p>
+    <br><br>
     <script>
-      const contractAddress = "0x1ABF8B9ad47CEdc0bAB847a1C4c2Ef7fC65283C4";
-      const abi = [
+        let web3;
+        let contract;
+        const contractABI = [
 	{
 		"inputs": [
 			{
-				"internalType": "address",
-				"name": "_recipient",
-				"type": "address"
+				"internalType": "address[]",
+				"name": "_recipients",
+				"type": "address[]"
 			},
 			{
 				"internalType": "uint256",
@@ -97,12 +89,6 @@
 				"indexed": true,
 				"internalType": "address",
 				"name": "sender",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "recipient",
 				"type": "address"
 			},
 			{
@@ -160,6 +146,25 @@
 		"type": "function"
 	},
 	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			}
+		],
+		"name": "RecipientAdded",
+		"type": "event"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -172,11 +177,6 @@
 			{
 				"internalType": "address payable",
 				"name": "sender",
-				"type": "address"
-			},
-			{
-				"internalType": "address payable",
-				"name": "recipient",
 				"type": "address"
 			},
 			{
@@ -212,6 +212,25 @@
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "getEscrowRecipients",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"name": "nextEscrowId",
 		"outputs": [
@@ -225,96 +244,192 @@
 		"type": "function"
 	}
 ];
+        const contractAddress = "0x2067392415504A1b58bb79FE2E5E12d4910899f6";
 
-    let web3;
-    let account;
-    let contract;
+        document.getElementById("connect").addEventListener("click", connectMetaMask);
+        document.getElementById("disconnect").addEventListener("click", disconnectMetaMask);
+        document.getElementById("createEscrow").addEventListener("click", createEscrow);
+        document.getElementById("negotiateEscrow").addEventListener("click", negotiateEscrow);
+        document.getElementById("fulfillEscrow").addEventListener("click", fulfillEscrow);
+        document.getElementById("getBalance").addEventListener("click", getContractBalance);
+        document.getElementById("displayEscrowInfoById").addEventListener("click", displayEscrowInfoById);
 
-    async function connectMetaMask() {
-        if (typeof window.ethereum !== 'undefined') {
-            web3 = new Web3(window.ethereum);
+        async function connectMetaMask() {
+            if (typeof window.ethereum === "undefined") {
+                alert("MetaMask not found. Please install MetaMask and try again.");
+                return;
+            }
+
             try {
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+                web3 = new Web3(window.ethereum);
+                contract = new web3.eth.Contract(contractABI, contractAddress);
+                
                 account = await web3.eth.getAccounts();
                 account = account[0];
-                contract = new web3.eth.Contract(abi, contractAddress);
+                
                 document.getElementById("account").innerText = account;
-                document.getElementById("content").style.display = "block";
+                
+                document.getElementById("connect").disabled = true;
+                document.getElementById("disconnect").disabled = false;
             } catch (error) {
-                console.error(error);
+                console.error("Error connecting to MetaMask:", error);
+                alert("Failed to connect to MetaMask.");
             }
-        } else {
-            alert("MetaMask not detected");
         }
-    }
 
-    async function listAllAddresses() {
-      const escrowCount = await contract.methods.nextEscrowId().call();
-      const escrowListBody = document.getElementById("escrowListBody");
+        function disconnectMetaMask() {
+            web3 = null;
+            contract = null;
+            document.getElementById("connect").disabled = false;
+            document.getElementById("disconnect").disabled = true;
+		}
+		
+		async function createEscrow() {
+            if (!contract) {
+                alert("Please connect MetaMask first.");
+                return;
+            }
 
-      // Clear the table body
-      escrowListBody.innerHTML = "";
+            const recipients = document.getElementById("recipients").value.split(",");
+            const amount = document.getElementById("amount").value;
 
-      for (let i = 0; i < escrowCount; i++) {
-        const escrow = await contract.methods.escrows(i).call();
+            try {
+                const accounts = await web3.eth.getAccounts();
+                const weiAmount = web3.utils.toWei(amount, "ether");
+                await contract.methods.createEscrow(recipients, weiAmount).send({ from: accounts[0], value: weiAmount });
+                alert("Escrow created successfully.");
+            } catch (error) {
+                console.error("Error creating escrow:", error);
+                alert("Failed to create escrow.");
+            }
+        }
 
-        const row = document.createElement("tr");
-        const escrowIdCell = document.createElement("td");
-        const senderCell = document.createElement("td");
-        const recipientCell = document.createElement("td");
-        const fulfilledCell = document.createElement("td");
-        const amountCell = document.createElement("td");
-        const negotiatedAmountCell = document.createElement("td");
+        async function negotiateEscrow() {
+            if (!contract) {
+                alert("Please connect MetaMask first.");
+                return;
+            }
 
-        escrowIdCell.innerText = i;
-        senderCell.innerText = escrow.sender;
-        recipientCell.innerText = escrow.recipient;
-        fulfilledCell.innerText = escrow.isFulfilled;
-        amountCell.innerText = escrow.amount;
-        if (escrow.negotiated_amount == 0)
-          negotiatedAmountCell.innerText = escrow.amount;
-        else
-          negotiatedAmountCell.innerText = escrow.negotiated_amount;
+            const escrowId = document.getElementById("negotiatedEscrowId").value;
+            const negotiatedAmount = document.getElementById("negotiatedAmount").value;
 
-        row.appendChild(escrowIdCell);
-        row.appendChild(senderCell);
-        row.appendChild(recipientCell);
-        row.appendChild(fulfilledCell);
-        row.appendChild(amountCell);
-        row.appendChild(negotiatedAmountCell);
-        escrowListBody.appendChild(row);
-      }
-    }
+            try {
+                const accounts = await web3.eth.getAccounts();
+                const weiAmount = web3.utils.toWei(negotiatedAmount, "ether");
+                await contract.methods.negotiateEscrow(escrowId, weiAmount).send({ from: accounts[0] });
+                alert("Escrow negotiated successfully.");
+            } catch (error) {
+                console.error("Error negotiating escrow:", error);
+                alert("Failed to negotiate escrow.");
+            }
+        }
 
+        async function fulfillEscrow() {
+            if (!contract) {
+                alert("Please connect MetaMask first.");
+                return;
+            }
 
+            const fulfillEscrowId = document.getElementById("fulfillEscrowId").value;
 
-    async function handleSubmit() {
-        const action = document.getElementById("action").value;
-        const recipient = document.getElementById("recipient").value;
-        const amount = document.getElementById("amount").value;
-        const escrowId = document.getElementById("escrowId").value;
+            try {
+                const accounts = await web3.eth.getAccounts();
+                await contract.methods.fulfillEscrow(fulfillEscrowId).send({ from: accounts[0] });
+                alert("Escrow fulfilled successfully.");
+            } catch (error) {
+                console.error("Error fulfilling escrow:", error);
+                alert("Failed to fulfill escrow.");
+            }
+        }
 
-        switch (action) {
-            case "createEscrow":
-                await contract.methods.createEscrow(recipient, web3.utils.toBN(amount)).send({ from: account, value: web3.utils.toBN(amount) });
-                break;
-            case "fulfillEscrow":
-                await contract.methods.fulfillEscrow(escrowId).send({ from: account });
-                break;
-            case "negotiateEscrow":
-                await contract.methods.negotiateEscrow(escrowId, web3.utils.toBN(amount)).send({ from: account });
-                break;
-            case "getContractBalance":
+        async function getContractBalance() {
+            if (!contract) {
+                alert("Please connect MetaMask first.");
+                return;
+            }
+
+            try {
                 const balance = await contract.methods.getContractBalance().call();
-                alert(`Contract balance: ${web3.utils.fromWei(balance, 'ether')} ETH`);
-                break;
-            default:
-                alert("Invalid action selected");
+                const etherBalance = web3.utils.fromWei(balance, "ether");
+                document.getElementById("balance").innerText = `Contract balance: ${etherBalance} ETH`;
+            } catch (error) {
+                console.error("Error getting contract balance:", error);
+                alert("Failed to get contract balance.");
+            }
         }
-    }
-    document.getElementById("listAddresses").addEventListener("click", listAllAddresses);
-    document.getElementById("connect").addEventListener("click", connectMetaMask);
-    document.getElementById("submit").addEventListener("click", handleSubmit);
-</script>
+        
+        async function getEscrowInfo(escrowId) {
+            console.log("Escrow ID:", escrowId);
+            if (!contract) {
+                alert("Please connect MetaMask first.");
+                return;
+            }
+            
+            try {
+                const escrowInfo = await contract.methods.escrows(escrowId).call();
+                const recipients = await contract.methods.getEscrowRecipients(escrowId).call();
+                
+                //console.log("Raw Escrow Info:", escrowInfo);
+        
+                const formattedEscrowInfo = {
+                    sender: escrowInfo.sender,
+                    recipients: recipients,
+                    amount: escrowInfo.amount,
+                    negotiated_amount: escrowInfo.negotiated_amount,
+                    isFulfilled: escrowInfo.isFulfilled,
+                };
+
+                console.log("Escrow Info:", formattedEscrowInfo);
+                return formattedEscrowInfo;
+            } catch (error) {
+                console.error("Error fetching escrow info:", error);
+            }
+        }
+
+        async function getNextEscrowId() {
+            if (!contract) {
+                alert("Please connect MetaMask first.");
+                return;
+            }
+            
+            try {
+                const id = await contract.methods.nextEscrowId().call();
+                console.log("Next Escrow ID:", id);
+                return id;
+            } catch (error) {
+                console.error("Error fetching next escrow ID:", error);
+            }
+        }
+        
+        async function displayEscrowInfoById() {
+            
+            if (!contract) {
+                alert("Please connect MetaMask first.");
+                return;
+            }
+            
+            const escrowId = document.getElementById("escrowInfoId").value;
+            const escrowInfo = await getEscrowInfo(escrowId);
+            //console.log("Raw Escrow Info:", escrowInfo);
+            document.getElementById("escrowInfo").innerText = JSON.stringify(escrowInfo, null, 2);
+        }
+
+        async function displayNextEscrowId() {
+            if (!contract) {
+                alert("Please connect MetaMask first.");
+                return;
+            }
+            
+            try {
+                const id = await contract.methods.nextEscrowId().call();
+                console.log("Next Escrow ID:", id);
+                document.getElementById("nextId").innerText = id;
+            } catch (error) {
+                console.error("Error fetching next escrow ID:", error);
+                document.getElementById("nextId").innerText = "Error fetching next escrow ID:" . error;
+            }
+        }
+    </script>
 </body>
 </html>
