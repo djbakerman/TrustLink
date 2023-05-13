@@ -23,12 +23,24 @@ contract Escrow is IEscrow {
 
     // A mapping of escrowId to KPI Contracs
     mapping(address => address) public kpiContractAddresses;
+    
+    // A mapping of escrowId to recipient addresses to their agreement status
+    mapping(uint256 => mapping(address => bool)) public recipientAgreements;
 
     // The address of the EscrowFactory that is allowed to create new escrows.
     address public escrowFactory;
 
     constructor(address _escrowFactory) {
         escrowFactory = _escrowFactory;
+    }
+    
+    // Modifier to check if all recipients have agreed to the escrow
+    modifier allRecipientsAgreed(uint256 _escrowId) {
+        EscrowInfo storage escrow = escrows[_escrowId];
+        for (uint256 i = 0; i < escrow.recipients.length; i++) {
+            require(recipientAgrees[_escrowId][escrow.recipients[i]], "All recipients must agree before fulfilling the escrow.");
+        }
+        _;
     }
 
     // Modifier to ensure only the EscrowFactory can call certain functions
@@ -111,7 +123,8 @@ contract Escrow is IEscrow {
     } // end of isRecipient
 
     // Allows the sender to fulfill the escrow, releasing the negotiated or full amount to the recipient.
-    function fulfillEscrow(uint256 _escrowId) public returns (bool) {
+    // Update the fulfillEscrow function to include the allRecipientsAgreed modifier
+    function fulfillEscrow(uint256 _escrowId) public allRecipientsAgreed(_escrowId) returns (bool) {
         require(_escrowId < nextEscrowId, "Invalid escrow ID.");
         EscrowInfo storage escrow = escrows[_escrowId];
 
@@ -166,4 +179,41 @@ contract Escrow is IEscrow {
 
         return recipients;
     } // end of getEscrowRecipients
+    
+    // 1. SetRecipientAgrees
+    function setRecipientAgrees(uint256 _escrowId, bool _agrees) public {
+        EscrowInfo storage escrow = escrows[_escrowId];
+        require(isRecipient(msg.sender, escrow.recipients), "Only a recipient can set their agreement status.");
+        recipientAgreements[_escrowId][msg.sender] = _agrees;
+        emit RecipientAgreementChanged(_escrowId, msg.sender, _agrees);
+    }
+
+    // 2. GetRecipientAgrees
+    function getRecipientAgrees(uint256 _escrowId, address _recipient) public view returns (bool) {
+        return recipientAgreements[_escrowId][_recipient];
+    }
+
+    // 3. ListAllRecipientStatus
+    function listAllRecipientStatus(uint256 _escrowId) public view returns (address[] memory, bool[] memory) {
+        EscrowInfo storage escrow = escrows[_escrowId];
+        address[] memory recipients = getEscrowRecipients(_escrowId);
+        bool[] memory agreementStatuses = new bool[](recipients.length);
+
+        for (uint256 i = 0; i < recipients.length; i++) {
+            agreementStatuses[i] = recipientAgreements[_escrowId][recipients[i]];
+        }
+
+        return (recipients, agreementStatuses);
+    }
+
+    // 4. AreAllRecipientsAgreed
+    function areAllRecipientsAgreed(uint256 _escrowId) public view returns (bool) {
+        EscrowInfo storage escrow = escrows[_escrowId];
+        for (uint256 i = 0; i < escrow.recipients.length; i++) {
+            if (!recipientAgreements[_escrowId][escrow.recipients[i]]) {
+                return false;
+            }
+        }
+        return true;
+    }
 } // end of Escrow
