@@ -64,6 +64,11 @@ contract Escrow is IEscrow {
             isFulfilled: false
         });
 
+        // Set recipientAgrees for each recipient to false
+        for (uint256 i = 0; i < newEscrow.recipients.length; i++) {
+            newEscrow.recipientAgrees[newEscrow.recipients[i]] = false;
+        }
+        
         escrows[nextEscrowId] = newEscrow;
         emit EscrowCreated(nextEscrowId, msg.sender, _amount);
         for (uint i = 0; i < _recipients.length; i++) {
