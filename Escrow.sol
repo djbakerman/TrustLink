@@ -126,6 +126,7 @@ contract Escrow is IEscrow {
     // Allows the sender to fulfill the escrow, releasing the negotiated or full amount to the recipient.
     // Update the fulfillEscrow function to include the allRecipientsAgreed modifier
     function fulfillEscrow(uint256 _escrowId) public allRecipientsAgreed(_escrowId) returns (bool) {
+       
         require(_escrowId < nextEscrowId, "Invalid escrow ID.");
         EscrowInfo storage escrow = escrows[_escrowId];
 
