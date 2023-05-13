@@ -3,55 +3,27 @@
 
 pragma solidity ^0.8.0;
 
-// IEscrow is an interface to define the required functions for the Escrow contract.
+// The IEscrow interface contains the event declarations and function signatures
+// for the external view functions in the Escrow.sol contract.
 interface IEscrow {
-    // Creates a new escrow with the specified recipients and amount, and returns the escrow ID.
-    function createEscrow(address[] calldata _recipients, uint256 _amount) external payable returns (uint256);
-
-    // Checks if the escrow with the specified ID is fulfilled.
-    function isFulfilled(uint256 _escrowId) external view returns (bool);
-    
-    // Sets the KPI contract address for the specified escrow ID.
-    function setKPIContractAddress(uint256 _escrowId, address _kpiContractAddress) external;
-
-    // Gets the KPI contract address associated with the specified escrow ID.
-    function getKPIContractAddress(uint256 _escrowId) external view returns (address);
-
-    // Allows the sender or recipient to negotiate the amount to be released from the escrow.
-    function negotiateEscrow(uint256 _escrowId, uint256 _negotiatedAmount) external;
-    
-    // Allows the sender to fulfill the escrow, releasing the negotiated or full amount to the recipients.
-    function fulfillEscrow(uint256 _escrowId) external returns (bool);
-    
-    // Returns the current balance of the escrow contract.
-    function getContractBalance() external view returns (uint256);
-    
-    // Returns the recipients of the specified escrow.
-    function getEscrowRecipients(uint256 _escrowId) external view returns (address[] memory);
-
-    // Returns the nextEscrowId of the specified escrow.
-    function getNextEscrowId() external view returns (uint256);
-
-    // Sets the recipient agrees status for the specified escrow ID.
-    function setRecipientAgrees(uint256 _escrowId, bool _agrees) external;
-
-    // Gets the recipient agrees status for the specified escrow ID and recipient.
-    function getRecipientAgrees(uint256 _escrowId, address _recipient) external view returns (bool);
-
-    // Lists all recipient agreement statuses for the specified escrow ID.
-    function listAllRecipientStatus(uint256 _escrowId) external view returns (address[] memory, bool[] memory);
-
-    // Emitted when a new escrow is created.
+    // Event emitted when a new escrow is created.
     event EscrowCreated(uint256 indexed escrowId, address indexed sender, uint256 amount);
-    
-    // Emitted when a recipient is added to an escrow.
+
+    // Event emitted when a recipient is added to an escrow.
     event RecipientAdded(uint256 indexed escrowId, address indexed recipient);
-    
-    // Emitted when an escrow is fulfilled.
+
+    // Event emitted when an escrow is fulfilled.
     event EscrowFulfilled(uint256 indexed escrowId);
 
-    // Emitted when the KPI contract address is set for an escrow.
-    event KPIContractAddressSet(uint256 indexed escrowId, address indexed kpiContractAddress);
-    
+    // Event emitted when a KPI contract address is set for a sender.
+    event KPIContractAddressSet(address indexed sender, address indexed kpiContractAddress);
+
+    // Event emitted when a recipient changes their agreement status.
     event RecipientAgreementChanged(uint256 indexed escrowId, address indexed recipient, bool agrees);
+
+    // Checks if the specified escrow is fulfilled.
+    function isFulfilled(uint256 escrowId) external view returns (bool);
+
+    // Returns the next escrow ID.
+    function getNextEscrowId() external view returns (uint256);
 }
