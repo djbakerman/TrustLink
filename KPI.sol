@@ -92,8 +92,7 @@ contract KPI is IKPI {
             kpi.kpiViolationPaid = escrow.fulfillEscrow(kpi.escrowId);
         }
 
-        emit KPIUpdated(_kpiId, _newValue, kpi.kpiViolationStatus);
-        emit KPIUpdated(_kpiId, _newValue, kpi.kpiViolationPaid);
+        emit KPIUpdated(_kpiId, _newValue, kpi.kpiViolationStatus, kpi.kpiViolationPaid);
     } // end of fetchKPIPointValue
 
     // Deletes a KPI using the KPIId.
