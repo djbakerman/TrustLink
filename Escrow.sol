@@ -15,6 +15,7 @@ contract Escrow is IEscrow {
         uint256 amount;
         uint256 negotiated_amount;
         bool isFulfilled;
+        mapping(address => bool) recipientAgrees;
     }
 
     // A mapping to store all escrows with their respective IDs.
@@ -131,6 +132,10 @@ contract Escrow is IEscrow {
         require(!escrow.isFulfilled, "Escrow is already fulfilled.");
         require(msg.sender == escrow.sender || msg.sender == kpiContractAddresses[_escrowId], "Only the sender or the associated KPI contract can fulfill the escrow.");
     
+        for (uint256 i = 0; i < escrow.recipients.length; i++) {
+            require(escrow.recipientAgrees[escrow.recipients[i]], "All recipients must agree before fulfilling the escrow.");
+        }
+        
         uint256 finalAmount = escrow.negotiated_amount > 0 ? escrow.negotiated_amount : escrow.amount;
         distributeAmount(escrow.recipients, finalAmount);
 
@@ -182,9 +187,9 @@ contract Escrow is IEscrow {
     
     // 1. SetRecipientAgrees
     function setRecipientAgrees(uint256 _escrowId, bool _agrees) public {
-        EscrowInfo storage escrow = escrows[_escrowId];
-        require(isRecipient(msg.sender, escrow.recipients), "Only a recipient can set their agreement status.");
-        recipientAgreements[_escrowId][msg.sender] = _agrees;
+        Escrow storage escrow = escrows[_escrowId];
+        require(isRecipient(_escrowId, msg.sender), "Only recipients can set their agreement status.");
+        escrow.recipientAgrees[msg.sender] = _agrees;
         emit RecipientAgreementChanged(_escrowId, msg.sender, _agrees);
     }
 
