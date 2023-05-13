@@ -52,4 +52,6 @@ interface IEscrow {
 
     // Emitted when the KPI contract address is set for an escrow.
     event KPIContractAddressSet(uint256 indexed escrowId, address indexed kpiContractAddress);
+    
+    event RecipientAgreementChanged(uint256 indexed escrowId, address indexed recipient, bool agrees);
 }
