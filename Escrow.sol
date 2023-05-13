@@ -188,7 +188,7 @@ contract Escrow is IEscrow {
     
     // 1. SetRecipientAgrees
     function setRecipientAgrees(uint256 _escrowId, bool _agrees) public {
-        Escrow storage escrow = escrows[_escrowId];
+        EscrowInfo storage escrow = escrows[_escrowId];
         require(isRecipient(_escrowId, msg.sender), "Only recipients can set their agreement status.");
         escrow.recipientAgrees[msg.sender] = _agrees;
         emit RecipientAgreementChanged(_escrowId, msg.sender, _agrees);
