@@ -39,7 +39,7 @@ contract Escrow is IEscrow {
     modifier allRecipientsAgreed(uint256 _escrowId) {
         EscrowInfo storage escrow = escrows[_escrowId];
         for (uint256 i = 0; i < escrow.recipients.length; i++) {
-            require(recipientAgrees[_escrowId][escrow.recipients[i]], "All recipients must agree before fulfilling the escrow.");
+            require(escrow.recipientAgrees[escrow.recipients[i]], "All recipients must agree before fulfilling the escrow.");
         }
         _;
     }
