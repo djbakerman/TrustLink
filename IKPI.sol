@@ -6,8 +6,7 @@ pragma solidity ^0.8.0;
 interface IKPI {
     // Events
     event KPICreated(bytes32 indexed kpiId, uint256 kpiThreshold, string kpiPath, string kpiUrl);
-    event KPIUpdated(bytes32 indexed kpiId, uint256 newValue, bool kpiViolationStatus);
-    event KPIUpdated(bytes32 indexed kpiId, uint256 newValue, bool kpiViolationPaid);
+    event KPIUpdated(bytes32 indexed kpiId, uint256 newValue, bool kpiViolationStatus, bool kpiViolationPaid);
     event KPIDeleted(bytes32 indexed kpiId, uint256 escrowId);
 
     // Create a new KPI
