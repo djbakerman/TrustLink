@@ -11,11 +11,11 @@ interface IEscrow {
     // Checks if the escrow with the specified ID is fulfilled.
     function isFulfilled(uint256 _escrowId) external view returns (bool);
     
-    // Sets the KPI contract address for the caller.
-    function setKPIContractAddress(address _kpiContractAddress) external;
+    // Sets the KPI contract address for the specified escrow ID.
+    function setKPIContractAddress(uint256 _escrowId, address _kpiContractAddress) external;
 
-    // Gets the KPI contract address associated with the caller.
-    function getKPIContractAddress() external view returns (address);
+    // Gets the KPI contract address associated with the specified escrow ID.
+    function getKPIContractAddress(uint256 _escrowId) external view returns (address);
 
     // Allows the sender or recipient to negotiate the amount to be released from the escrow.
     function negotiateEscrow(uint256 _escrowId, uint256 _negotiatedAmount) external;
@@ -31,6 +31,15 @@ interface IEscrow {
 
     // Returns the nextEscrowId of the specified escrow.
     function getNextEscrowId() external view returns (uint256);
+
+    // Sets the recipient agrees status for the specified escrow ID.
+    function setRecipientAgrees(uint256 _escrowId, bool _agrees) external;
+
+    // Gets the recipient agrees status for the specified escrow ID and recipient.
+    function getRecipientAgrees(uint256 _escrowId, address _recipient) external view returns (bool);
+
+    // Lists all recipient agreement statuses for the specified escrow ID.
+    function listAllRecipientStatus(uint256 _escrowId) external view returns (address[] memory, bool[] memory);
 
     // Emitted when a new escrow is created.
     event EscrowCreated(uint256 indexed escrowId, address indexed sender, uint256 amount);
