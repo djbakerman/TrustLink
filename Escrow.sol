@@ -116,6 +116,10 @@ contract Escrow is IEscrow {
     function getRecipientAgrees(uint256 _escrowId, address _recipient) public view returns (bool) {
         return recipientAgreements[_escrowId][_recipient];
     }
+    
+    function getNextEscrowId() external view override returns (uint256) {
+        return nextEscrowId;
+    }
 
     function areAllRecipientsAgreed(uint256 _escrowId) public view returns (bool) {
         EscrowInfo storage escrow = escrows[_escrowId];
