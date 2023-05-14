@@ -6,7 +6,6 @@ pragma solidity ^0.8.0;
 import "./IKPI.sol";
 import "./IEscrow.sol";
 
-// The KPI contract is responsible for managing KPIs related to escrow contracts.
 contract KPI is IKPI {
     // KPIInfo struct contains all the details of a specific KPI instance.
     struct KPIInfo {
@@ -22,10 +21,6 @@ contract KPI is IKPI {
     }
 
     IEscrow public escrow;
-    
-    constructor(address _escrow) {
-        escrow = IEscrow(_escrow);
-    }
 
     // A mapping to store KPIs with their respective kpiIds.
     mapping(bytes32 => KPIInfo) public kpis;
@@ -33,7 +28,6 @@ contract KPI is IKPI {
     // A mapping to store an array of KPIs for each escrowId.
     mapping(uint256 => bytes32[]) public escrowKPIs;
 
-    // Constructor to set the Escrow contract address
     constructor(address _escrow) {
         escrow = IEscrow(_escrow);
     }
@@ -45,54 +39,55 @@ contract KPI is IKPI {
 
     // Creates a new KPI with the provided details, and stores it in the mapping.
     function createKPIPoint(uint256 _escrowId, uint256 _kpiThreshold, string calldata _kpiPath, string calldata _kpiUrl) external override returns (bytes32) {
-        // Ensure the escrow exists
-        require(_escrowId < escrow.getNextEscrowId(), "Escrow does not exist.");
-        require(!escrow.isFulfilled(_escrowId), "Escrow has already been fulfilled.");
+    // Ensure the escrow exists
+    require(_escrowId < escrow.getNextEscrowId(), "Escrow does not exist.");
+    require(!escrow.isEscrowFulfilled(_escrowId), "Escrow has already been fulfilled.");
 
-        bytes32 kpiId = _generateKPIId();
+    bytes32 kpiId = _generateKPIId();
 
-        address _escrowContract = address(escrow);
+    address _escrowContract = address(escrow);
 
-        KPIInfo memory newKPI = KPIInfo({
-            kpiId: kpiId,
-            kpiThreshold: _kpiThreshold,
-            kpiValue: 0,
-            kpiPath: _kpiPath,
-            kpiUrl: _kpiUrl,
-            kpiViolationStatus: false,
-            kpiViolationPaid: false,
-            escrowContract: _escrowContract,
-            escrowId: _escrowId
-        });
+    KPIInfo memory newKPI = KPIInfo({
+        kpiId: kpiId,
+        kpiThreshold: _kpiThreshold,
+        kpiValue: 0,
+        kpiPath: _kpiPath,
+        kpiUrl: _kpiUrl,
+        kpiViolationStatus: false,
+        kpiViolationPaid: false,
+        escrowContract: _escrowContract,
+        escrowId: _escrowId
+    });
 
-        kpis[kpiId] = newKPI;
-        escrowKPIs[_escrowId].push(kpiId);
+    kpis[kpiId] = newKPI;
+    escrowKPIs[_escrowId].push(kpiId);
 
-        // Check if the KPI contract address is already set for the specified escrowId, if not, set it
-        address currentKPIContractAddress = escrow.getKPIContractAddress(_escrowId);
-        if (currentKPIContractAddress == address(0)) {
-            escrow.setKPIContractAddress(_escrowId, address(this));
-        }
+    // Check if the KPI contract address is already set for the specified escrowId, if not, set it
+    address currentKPIContractAddress = escrow.getKPIContractAddress(_escrowId);
+    if (currentKPIContractAddress == address(0)) {
+        escrow.setKPIContractAddress(_escrowId, address(this));
+    }
 
-        // Emit the KPICreated event
-        emit KPICreated(kpiId, _kpiThreshold, _kpiPath, _kpiUrl);
+    // Emit the KPICreated event
+    emit KPICreated(kpiId, _kpiThreshold, _kpiPath, _kpiUrl);
 
-        return kpiId;
-    } // end of createKPIPoint
+    return kpiId;
+} // end of createKPIPoint
 
-        // Updates the KPI value and checks if the KPI has been violated.
+
+    // Updates the KPI value and checks if the KPI has been violated.
     function fetchKPIPointValue(bytes32 _kpiId, uint256 _newValue) external override {
         KPIInfo storage kpi = kpis[_kpiId];
         require(kpi.kpiId != 0, "KPI does not exist.");
 
         kpi.kpiValue = _newValue;
         kpi.kpiViolationStatus = _newValue >= kpi.kpiThreshold;
-        
         if (kpi.kpiViolationStatus) {
             kpi.kpiViolationPaid = escrow.fulfillEscrow(kpi.escrowId);
         }
 
-        emit KPIUpdated(_kpiId, _newValue, kpi.kpiViolationStatus, kpi.kpiViolationPaid);
+        emit KPIUpdated(_kpiId, _newValue, kpi.kpiViolationStatus);
+        emit KPIUpdated(_kpiId, _newValue, kpi.kpiViolationPaid);
     } // end of fetchKPIPointValue
 
     // Deletes a KPI using the KPIId.
@@ -136,7 +131,9 @@ contract KPI is IKPI {
         uint256 kpiThreshold,
         uint256 kpiValue,
         string memory kpiPath,
-        bool kpiViolationStatus
+        string memory kpiUrl,
+        bool kpiViolationStatus,
+        bool kpiViolationPaid
     ) {
         KPIInfo storage kpi = kpis[_kpiId];
         require(kpi.kpiId != 0, "KPI does not exist.");
@@ -144,6 +141,8 @@ contract KPI is IKPI {
         kpiThreshold = kpi.kpiThreshold;
         kpiValue = kpi.kpiValue;
         kpiPath = kpi.kpiPath;
+        kpiUrl = kpi.kpiUrl;
         kpiViolationStatus = kpi.kpiViolationStatus;
+        kpiViolationPaid = kpi.kpiViolationPaid;
     } // end of getKPILastValue
-} 
+}
