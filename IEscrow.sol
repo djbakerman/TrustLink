@@ -12,6 +12,7 @@ interface IEscrow {
     function createEscrow(address[] memory _recipients, uint256 _amount) external payable returns (uint256);
     function negotiateEscrow(uint256 _escrowId, uint256 _negotiatedAmount) external;
     function fulfillEscrow(uint256 _escrowId) external returns (bool);
+    function isEscrowFulfilled(uint256 _escrowId) external view returns (bool);
     function setRecipientAgrees(uint256 _escrowId, bool _agrees) external;
     function getRecipientAgrees(uint256 _escrowId, address _recipient) external view returns (bool);
     function getNextEscrowId() external view returns (uint256);
