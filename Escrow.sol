@@ -76,7 +76,7 @@ contract Escrow is IEscrow {
         require(_escrowId < nextEscrowId, "Invalid escrow ID.");
         EscrowInfo storage escrow = escrows[_escrowId];
 
-                require(!escrow.isFulfilled, "Escrow is already fulfilled.");
+        require(!escrow.isFulfilled, "Escrow is already fulfilled.");
         require(msg.sender == escrow.sender, "Only the sender can fulfill the escrow.");
         
         uint256 finalAmount = escrow.negotiated_amount > 0 ? escrow.negotiated_amount : escrow.amount;
@@ -105,7 +105,7 @@ contract Escrow is IEscrow {
         }
         return false;
     }
-    
+
     function isEscrowFulfilled(uint256 _escrowId) external view override returns (bool) {
         require(_escrowId < nextEscrowId, "Invalid escrow ID.");
         EscrowInfo storage escrow = escrows[_escrowId];
@@ -122,7 +122,7 @@ contract Escrow is IEscrow {
     function getRecipientAgrees(uint256 _escrowId, address _recipient) public view returns (bool) {
         return recipientAgreements[_escrowId][_recipient];
     }
-    
+
     function getNextEscrowId() external view override returns (uint256) {
         return nextEscrowId;
     }
