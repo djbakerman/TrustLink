@@ -105,6 +105,12 @@ contract Escrow is IEscrow {
         }
         return false;
     }
+    
+    function isEscrowFulfilled(uint256 _escrowId) external view override returns (bool) {
+        require(_escrowId < nextEscrowId, "Invalid escrow ID.");
+        EscrowInfo storage escrow = escrows[_escrowId];
+        return escrow.isFulfilled;
+    }
 
     function setRecipientAgrees(uint256 _escrowId, bool _agrees) public {
         EscrowInfo storage escrow = escrows[_escrowId];
