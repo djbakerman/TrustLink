@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 import "./KPI.sol";
 
 contract KPIFactory {
+    event KPIContractCreated(uint256 indexed escrowId, address indexed escrowAddress, address kpiContract);
     mapping(address => mapping(uint256 => address)) public kpiContracts;
 
     function getOrCreateKPIForEscrow(uint256 _escrowId, address _escrowAddress) public returns (address) {
