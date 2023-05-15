@@ -6,23 +6,23 @@ pragma solidity ^0.8.0;
 import "./Escrow.sol";
 
 contract EscrowFactory {
-    mapping(address => Escrow) public userEscrows;
-    uint256 public nextUserId;
+    mapping(address => Escrow) public escrowAccounts;
+    uint256 public nextAccountId;
 
     event UserEscrowCreated(address indexed user, address indexed escrow);
 
-    function getOrCreateUserEscrow() public returns (Escrow) {
-        Escrow userEscrow = userEscrows[msg.sender];
+    function getOrCreateEscrowAccount() public returns (Escrow) {
+        Escrow userEscrow = escrowAccounts[msg.sender];
         if (address(userEscrow) == address(0)) {
             userEscrow = new Escrow();
-            userEscrows[msg.sender] = userEscrow;
+            escrowAccounts[msg.sender] = userEscrow;
             emit UserEscrowCreated(msg.sender, address(userEscrow));
-            nextUserId++;
+            nextAccountId++;
         }
         return userEscrow;
     }
 
-    function getNumberEscrowUsers() public view returns (uint256) {
-        return (nextUserId);
+    function getNumberEscrowAccounts() public view returns (uint256) {
+        return (nextAccountId);
     }
 }
