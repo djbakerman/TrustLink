@@ -62,12 +62,6 @@ contract KPI is IKPI {
     kpis[kpiId] = newKPI;
     escrowKPIs[_escrowId].push(kpiId);
 
-    // Check if the KPI contract address is already set for the specified escrowId, if not, set it
-    address currentKPIContractAddress = escrow.getKPIContractAddress(_escrowId);
-    if (currentKPIContractAddress == address(0)) {
-        escrow.setKPIContractAddress(_escrowId, address(this));
-    }
-
     // Emit the KPICreated event
     emit KPICreated(kpiId, _kpiThreshold, _kpiPath, _kpiUrl);
 
