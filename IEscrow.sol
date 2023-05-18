@@ -17,4 +17,5 @@ interface IEscrow {
     function getRecipientAgrees(uint256 _escrowId, address _recipient) external view returns (bool);
     function getNextEscrowId() external view returns (uint256);
     function areAllRecipientsAgreed(uint256 _escrowId) external view returns (bool);
+    function getOrCreateKPIForEscrow(uint256 _escrowId) external returns (address);
 }
