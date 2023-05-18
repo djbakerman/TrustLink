@@ -4,6 +4,7 @@
 pragma solidity ^0.8.0;
 
 import "./IEscrow.sol";
+import "./KPIFactory.sol";
 
 contract Escrow is IEscrow {
     struct EscrowInfo {
@@ -12,10 +13,17 @@ contract Escrow is IEscrow {
         uint256 amount;
         uint256 negotiated_amount;
         bool isFulfilled;
+        address kpiContract;
     }
 
     mapping(uint256 => EscrowInfo) public escrows;
     uint256 public nextEscrowId;
+
+    KPIFactory public kpiFactory;
+
+    constructor(address _kpiFactoryAddress) {
+        kpiFactory = KPIFactory(_kpiFactoryAddress);
+    }
 
     mapping(uint256 => mapping(address => bool)) public recipientAgreements;
 
@@ -36,7 +44,8 @@ contract Escrow is IEscrow {
             recipients: _toPayableArray(_recipients),
             amount: msg.value,
             negotiated_amount: 0,
-            isFulfilled: false
+            isFulfilled: false,
+            kpiContract: address(0)
         });
 
         for (uint256 i = 0; i < newEscrow.recipients.length; i++) {
@@ -61,7 +70,7 @@ contract Escrow is IEscrow {
         return payableArray;
     }
 
-    function negotiateEscrow(uint256 _escrowId, uint256 _negotiatedAmount) public {
+    function negotiateEscrow(uint256 _escrowId, uint256 _negotiatedAmount) public allRecipientsAgreed(_escrowId) {
         require(_escrowId < nextEscrowId, "Invalid escrow ID.");
         EscrowInfo storage escrow = escrows[_escrowId];
 
@@ -77,9 +86,16 @@ contract Escrow is IEscrow {
         EscrowInfo storage escrow = escrows[_escrowId];
 
         require(!escrow.isFulfilled, "Escrow is already fulfilled.");
-        require(msg.sender == escrow.sender, "Only the sender can fulfill the escrow.");
+
+        require(msg.sender == escrow.kpiContract || msg.sender == escrow.sender, "Only sender or recipients can execute this function.");
         
         uint256 finalAmount = escrow.negotiated_amount > 0 ? escrow.negotiated_amount : escrow.amount;
+        if (escrow.negotiated_amount > 0) {
+            address payable sender = payable(escrow.sender);
+            sender.transfer(escrow.amount - escrow.negotiated_amount);
+        }
+
+
         distributeAmount(escrow.recipients, finalAmount);
 
         escrow.isFulfilled = true;
@@ -125,6 +141,20 @@ contract Escrow is IEscrow {
 
     function getNextEscrowId() external view override returns (uint256) {
         return nextEscrowId;
+    }
+
+    function getOrCreateKPIForEscrow(uint256 _escrowId) public returns (address) {
+        require(_escrowId < nextEscrowId, "Invalid escrow ID.");
+        EscrowInfo storage escrow = escrows[_escrowId];
+        require(!escrow.isFulfilled, "Escrow is already fulfilled.");
+        require(isRecipient(msg.sender, escrow.recipients) || msg.sender == escrow.sender || msg.sender == address(this) || msg.sender == escrow.kpiContract, "Only sender or recipients can execute this function.");
+        address _escrowContractAddress = address(this);
+
+        if (escrow.kpiContract == address(0)) {
+            address kpiContractAddress = kpiFactory.getOrCreateKPIForEscrow(_escrowId, _escrowContractAddress);
+            escrow.kpiContract = kpiContractAddress;
+        }
+        return escrow.kpiContract;
     }
 
     function areAllRecipientsAgreed(uint256 _escrowId) public view returns (bool) {
