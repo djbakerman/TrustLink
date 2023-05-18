@@ -6,12 +6,12 @@ pragma solidity ^0.8.0;
 import "./KPI.sol";
 
 contract KPIFactory {
-    event KPIContractCreated(uint256 indexed escrowId, address indexed escrowAddress, address kpiContract);
     mapping(address => mapping(uint256 => address)) public kpiContracts;
+    event KPIContractCreated(uint256 indexed escrowId, address indexed escrowAddress, address kpiContract);
 
     function getOrCreateKPIForEscrow(uint256 _escrowId, address _escrowAddress) public returns (address) {
         if (kpiContracts[_escrowAddress][_escrowId] == address(0)) {
-            KPI newKPI = new KPI(_escrowId, _escrowAddress);
+            KPI newKPI = new KPI(_escrowAddress);
             kpiContracts[_escrowAddress][_escrowId] = address(newKPI);
 
             // Emit the event when a new KPI contract is created
