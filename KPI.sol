@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 
 import "./IKPI.sol";
 import "./IEscrow.sol";
+import "./IKPIConsumer.sol";
 
 contract KPI is IKPI {
     // KPIInfo struct contains all the details of a specific KPI instance.
@@ -18,9 +19,11 @@ contract KPI is IKPI {
         bool kpiViolationPaid;
         address escrowContract;
         uint256 escrowId;
+        bytes32 requestId;
     }
 
     IEscrow public escrow;
+    IKPIConsumer public consumerContract;
 
     // A mapping to store KPIs with their respective kpiIds.
     mapping(bytes32 => KPIInfo) public kpis;
@@ -30,6 +33,8 @@ contract KPI is IKPI {
 
     constructor(address _escrow) {
         escrow = IEscrow(_escrow);
+        consumerContract = IKPIConsumer(0x68F2e66AfB4CfEc66842F5DaAA4f10E62bfD1A19);
+
     }
 
     // Generates a unique KPI ID
@@ -39,38 +44,41 @@ contract KPI is IKPI {
 
     // Creates a new KPI with the provided details, and stores it in the mapping.
     function createKPIPoint(uint256 _escrowId, uint256 _kpiThreshold, string calldata _kpiPath, string calldata _kpiUrl) external override returns (bytes32) {
-    // Ensure the escrow exists
-    require(_escrowId < escrow.getNextEscrowId(), "Escrow does not exist.");
-    require(!escrow.isEscrowFulfilled(_escrowId), "Escrow has already been fulfilled.");
+        // Ensure the escrow exists
+        require(_escrowId < escrow.getNextEscrowId(), "Escrow does not exist.");
+        require(!escrow.isEscrowFulfilled(_escrowId), "Escrow has already been fulfilled.");
 
-    bytes32 kpiId = _generateKPIId();
+        bytes32 kpiId = _generateKPIId();
 
-    address _escrowContract = address(escrow);
+        address _escrowContract = address(escrow);
 
-    KPIInfo memory newKPI = KPIInfo({
-        kpiId: kpiId,
-        kpiThreshold: _kpiThreshold,
-        kpiValue: 0,
-        kpiPath: _kpiPath,
-        kpiUrl: _kpiUrl,
-        kpiViolationStatus: false,
-        kpiViolationPaid: false,
-        escrowContract: _escrowContract,
-        escrowId: _escrowId
-    });
+        _kpiThreshold = _kpiThreshold  * 10**18;
 
-    kpis[kpiId] = newKPI;
-    escrowKPIs[_escrowId].push(kpiId);
+        KPIInfo memory newKPI = KPIInfo({
+            kpiId: kpiId,
+            kpiThreshold: _kpiThreshold,
+            kpiValue: 0,
+            kpiPath: _kpiPath,
+            kpiUrl: _kpiUrl,
+            kpiViolationStatus: false,
+            kpiViolationPaid: false,
+            escrowContract: _escrowContract,
+            escrowId: _escrowId,
+            requestId: 0
+        });
 
-    // Emit the KPICreated event
-    emit KPICreated(kpiId, _kpiThreshold, _kpiPath, _kpiUrl);
+        kpis[kpiId] = newKPI;
+        escrowKPIs[_escrowId].push(kpiId);
 
-    return kpiId;
-} // end of createKPIPoint
+        // Emit the KPICreated event
+        emit KPICreated(kpiId, _kpiThreshold, _kpiPath, _kpiUrl);
+
+        return kpiId;
+    } // end of createKPIPoint
 
 
-    // Updates the KPI value and checks if the KPI has been violated.
-    function fetchKPIPointValue(bytes32 _kpiId, uint256 _newValue) external override {
+    // Manually updates the KPI value and checks if the KPI has been violated.
+    function setKPIPointValue(bytes32 _kpiId, uint256 _newValue) external override {
         KPIInfo storage kpi = kpis[_kpiId];
         require(kpi.kpiId != 0, "KPI does not exist.");
 
@@ -82,7 +90,25 @@ contract KPI is IKPI {
 
         emit KPIUpdated(_kpiId, _newValue, kpi.kpiViolationStatus);
         emit KPIUpdated(_kpiId, _newValue, kpi.kpiViolationPaid);
-    } // end of fetchKPIPointValue
+    } // end of setKPIPointValue
+
+    function callFetchKPIPointValue(bytes32 _kpiId) external {
+        KPIInfo storage kpi = kpis[_kpiId];
+        kpi.requestId = consumerContract.fetchKPIPointValue(kpi.kpiPath, kpi.kpiUrl);
+    }
+
+    function callGetfulfilledPointValue(bytes32 _kpiId) external {
+        KPIInfo storage kpi = kpis[_kpiId];
+        kpi.kpiValue = consumerContract.getfulfilledPointValue(kpi.requestId);
+
+        kpi.kpiViolationStatus = kpi.kpiValue >= kpi.kpiThreshold;
+        if (kpi.kpiViolationStatus) {
+            kpi.kpiViolationPaid = escrow.fulfillEscrow(kpi.escrowId);
+        }
+
+        emit KPIUpdated(_kpiId, kpi.kpiValue, kpi.kpiViolationStatus);
+        emit KPIUpdated(_kpiId, kpi.kpiValue, kpi.kpiViolationPaid);
+    }
 
     // Deletes a KPI using the KPIId.
     function deleteKPIPoint(bytes32 _kpiId) external {
