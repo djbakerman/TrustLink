@@ -4,8 +4,10 @@
 pragma solidity ^0.8.0;
 
 interface IKPIConsumer {
-    function fetchKPIPointValue() external returns (bytes32 requestId);
+    function fetchKPIPointValue(string memory kpiPath, string memory kpiUrl) external returns (bytes32 requestId);
     function fulfill(bytes32 _requestId, uint256 _pointValue) external;
     function withdrawLink() external;
-    function pointValue() external view returns (uint256);
+    function getfulfilledPointValue(bytes32 requestId) external returns (uint256);
+
+    event FetchKPIPointV(bytes32 indexed requestId, uint256 pointValue);
 }
