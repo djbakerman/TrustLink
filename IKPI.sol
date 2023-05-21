@@ -14,7 +14,7 @@ interface IKPI {
     ) external returns (bytes32);
 
     // Fetches the KPI value and checks if the KPI has been violated.
-    function fetchKPIPointValue(bytes32 _kpiId, uint256 _newValue) external;
+    function setKPIPointValue(bytes32 _kpiId, uint256 _newValue) external;
 
     // Gets the KPI details for the given kpiId.
     function getKPILastValue(bytes32 _kpiId) external view returns (
