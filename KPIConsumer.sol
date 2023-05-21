@@ -5,15 +5,20 @@ pragma solidity ^0.8.0;
 
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
+import "./IKPIConsumer.sol";
 
-contract KPIConsumer is ChainlinkClient, ConfirmedOwner {
+contract KPIConsumer is IKPIConsumer, ChainlinkClient, ConfirmedOwner {
     using Chainlink for Chainlink.Request;
 
-    uint256 public pointValue;
+    struct Fulfillment {
+        uint256 pointValue;
+        bool isFulfilled;
+    }
+
+    mapping(bytes32 => Fulfillment) public requestIdToFulfillment;
+
     bytes32 private jobId;
     uint256 private fee;
-
-    event FetchKPIPointV(bytes32 indexed requestId, uint256 pointValue);
 
     constructor() ConfirmedOwner(msg.sender) {
         setChainlinkToken(0x779877A7B0D9E8603169DdbD7836e478b4624789);
@@ -22,7 +27,7 @@ contract KPIConsumer is ChainlinkClient, ConfirmedOwner {
         fee = (1 * LINK_DIVISIBILITY) / 100; // 0,01 * 10**18 (Varies by network and job)
     }
 
-    function fetchKPIPointValue() public returns (bytes32 requestId) {
+    function fetchKPIPointValue(string memory _kpiPath, string memory _kpiUrl) public returns (bytes32 requestId) {
         Chainlink.Request memory req = buildChainlinkRequest(
             jobId,
             address(this),
@@ -32,10 +37,10 @@ contract KPIConsumer is ChainlinkClient, ConfirmedOwner {
         // Set the URL to perform the GET request on
         req.add(
             "get",
-            "https://cloudcitycolo.com/eth.php"
+            _kpiUrl
         );
 
-        req.add("path", "Body,Temperature"); // Chainlink nodes 1.0.0 and later support this format
+        req.add("path", _kpiPath); // Chainlink nodes 1.0.0 and later support this format
 
         // Multiply the result by 1000000000000000000 to remove decimals
         int256 timesAmount = 10 ** 18;
@@ -45,12 +50,16 @@ contract KPIConsumer is ChainlinkClient, ConfirmedOwner {
         return sendChainlinkRequest(req, fee);
     }
 
-    function fulfill(
-        bytes32 _requestId,
-        uint256 _pointValue
-    ) public recordChainlinkFulfillment(_requestId) {
+    function fulfill(bytes32 _requestId, uint256 _pointValue) public recordChainlinkFulfillment(_requestId) {
+        requestIdToFulfillment[_requestId].pointValue = _pointValue;
+        requestIdToFulfillment[_requestId].isFulfilled = true;
+        
         emit FetchKPIPointV(_requestId, _pointValue);
-        pointValue = _pointValue;
+    }
+
+    function getfulfilledPointValue(bytes32 requestId) external view returns (uint256) {
+        require(requestIdToFulfillment[requestId].isFulfilled, "Not yet fulfilled");
+        return requestIdToFulfillment[requestId].pointValue;
     }
 
     function withdrawLink() public onlyOwner {
