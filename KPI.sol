@@ -5,9 +5,10 @@ pragma solidity ^0.8.0;
 
 import "./IKPI.sol";
 import "./IEscrow.sol";
-import "./IKPIConsumer.sol";
+import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
+import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
 
-contract KPI is IKPI {
+contract KPI is IKPI,ChainlinkClient, ConfirmedOwner {
     // KPIInfo struct contains all the details of a specific KPI instance.
     struct KPIInfo {
         bytes32 kpiId;
@@ -23,7 +24,6 @@ contract KPI is IKPI {
     }
 
     IEscrow public escrow;
-    IKPIConsumer public consumerContract;
 
     // A mapping to store KPIs with their respective kpiIds.
     mapping(bytes32 => KPIInfo) public kpis;
@@ -31,10 +31,24 @@ contract KPI is IKPI {
     // A mapping to store an array of KPIs for each escrowId.
     mapping(uint256 => bytes32[]) public escrowKPIs;
 
-    constructor(address _escrow) {
-        escrow = IEscrow(_escrow);
-        consumerContract = IKPIConsumer(0x68F2e66AfB4CfEc66842F5DaAA4f10E62bfD1A19);
+    using Chainlink for Chainlink.Request;
 
+    struct Fulfillment {
+        uint256 pointValue;
+        bool isFulfilled;
+    }
+
+    mapping(bytes32 => Fulfillment) public requestIdToFulfillment;
+
+    bytes32 private jobId;
+    uint256 private fee;
+
+    constructor(address _escrow) ConfirmedOwner(msg.sender) {
+        escrow = IEscrow(_escrow);
+        setChainlinkToken(0x779877A7B0D9E8603169DdbD7836e478b4624789);
+        setChainlinkOracle(0x6090149792dAAeE9D1D568c9f9a6F6B46AA29eFD);
+        jobId = "ca98366cc7314957b8c012c72f05aeeb";
+        fee = (1 * LINK_DIVISIBILITY) / 100; // 0,01 * 10**18 (Varies by network and job)
     }
 
     // Generates a unique KPI ID
@@ -94,12 +108,12 @@ contract KPI is IKPI {
 
     function callFetchKPIPointValue(bytes32 _kpiId) external {
         KPIInfo storage kpi = kpis[_kpiId];
-        kpi.requestId = consumerContract.fetchKPIPointValue(kpi.kpiPath, kpi.kpiUrl);
+        kpi.requestId = fetchKPIPointValue(kpi.kpiPath, kpi.kpiUrl);
     }
 
     function callGetfulfilledPointValue(bytes32 _kpiId) external {
         KPIInfo storage kpi = kpis[_kpiId];
-        kpi.kpiValue = consumerContract.getfulfilledPointValue(kpi.requestId);
+        kpi.kpiValue = this.getfulfilledPointValue(kpi.requestId);
 
         kpi.kpiViolationStatus = kpi.kpiValue >= kpi.kpiThreshold;
         if (kpi.kpiViolationStatus) {
@@ -165,4 +179,47 @@ contract KPI is IKPI {
         kpiViolationStatus = kpi.kpiViolationStatus;
         kpiViolationPaid = kpi.kpiViolationPaid;
     } // end of getKPILastValue
+
+    function fetchKPIPointValue(string memory _kpiPath, string memory _kpiUrl) private returns (bytes32 requestId) {
+        Chainlink.Request memory req = buildChainlinkRequest(
+            jobId,
+            address(this),
+            this.fulfill.selector
+        );
+
+        // Set the URL to perform the GET request on
+        req.add(
+            "get",
+            _kpiUrl
+        );
+
+        req.add("path", _kpiPath); // Chainlink nodes 1.0.0 and later support this format
+
+        // Multiply the result by 1000000000000000000 to remove decimals
+        int256 timesAmount = 10 ** 18;
+        req.addInt("times", timesAmount);
+
+        // Sends the request
+        return sendChainlinkRequest(req, fee);
+    }
+
+    function fulfill(bytes32 _requestId, uint256 _pointValue) public recordChainlinkFulfillment(_requestId) {
+        requestIdToFulfillment[_requestId].pointValue = _pointValue;
+        requestIdToFulfillment[_requestId].isFulfilled = true;
+        
+        emit FetchKPIPointV(_requestId, _pointValue);
+    }
+
+    function getfulfilledPointValue(bytes32 requestId) external view returns (uint256) {
+        require(requestIdToFulfillment[requestId].isFulfilled, "Not yet fulfilled");
+        return requestIdToFulfillment[requestId].pointValue;
+    }
+
+    function withdrawLink() public onlyOwner {
+        LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
+        require(
+            link.transfer(msg.sender, link.balanceOf(address(this))),
+            "Unable to transfer"
+        );
+    }
 }
