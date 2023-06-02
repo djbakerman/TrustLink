@@ -9,7 +9,6 @@ contract EscrowFactory {
     mapping(address => Escrow) public escrowAccounts;
     uint256 public nextAccountId;
     address public kpiFactoryAddress; // The deployed address of the KPIFactory contract
-    address public kpiConsumerAddress;
 
     constructor(address _kpiFactoryAddress) {
         kpiFactoryAddress = _kpiFactoryAddress;
