@@ -8,8 +8,9 @@ import "./IEscrow.sol";
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
 
-contract KPI is IKPI,ChainlinkClient, ConfirmedOwner {
-    // KPIInfo struct contains all the details of a specific KPI instance.
+// KPI contract that interacts with the Chainlink network to fetch data from an external API
+contract KPI is IKPI, ChainlinkClient, ConfirmedOwner {
+    // Struct to store all the details of a specific KPI instance
     struct KPIInfo {
         bytes32 kpiId;
         uint256 kpiThreshold;
@@ -23,40 +24,52 @@ contract KPI is IKPI,ChainlinkClient, ConfirmedOwner {
         bytes32 requestId;
     }
 
+    // Instance of the Escrow contract
     IEscrow public escrow;
 
-    // A mapping to store KPIs with their respective kpiIds.
+    // Mapping to store KPIs with their respective kpiIds
     mapping(bytes32 => KPIInfo) public kpis;
 
-    // A mapping to store an array of KPIs for each escrowId.
+    // Mapping to store an array of KPIs for each escrowId
     mapping(uint256 => bytes32[]) public escrowKPIs;
 
+    // Using Chainlink for Chainlink.Request
     using Chainlink for Chainlink.Request;
 
+    // Struct to store fulfillment details
     struct Fulfillment {
         uint256 pointValue;
         bool isFulfilled;
     }
 
+    // Mapping to store fulfillment details for each requestId
     mapping(bytes32 => Fulfillment) public requestIdToFulfillment;
 
+    // Chainlink job ID
     bytes32 private jobId;
+    // Chainlink fee
     uint256 private fee;
 
-    constructor(address _escrow) ConfirmedOwner(msg.sender) {
+    // The minimum time between fetches
+    uint256 public minTimeBetweenFetches = 15 minutes;
+    // The last time the KPI was fetched
+    uint256 public lastFetchTime = 0;
+
+    // Constructor to set the escrow contract address, the sender as the owner, the Chainlink token address, the Chainlink oracle address, the job ID, and the fee
+    constructor(address _escrow, address _sender) ConfirmedOwner(_sender) {
         escrow = IEscrow(_escrow);
         setChainlinkToken(0x779877A7B0D9E8603169DdbD7836e478b4624789);
         setChainlinkOracle(0x6090149792dAAeE9D1D568c9f9a6F6B46AA29eFD);
         jobId = "ca98366cc7314957b8c012c72f05aeeb";
         fee = (1 * LINK_DIVISIBILITY) / 100; // 0,01 * 10**18 (Varies by network and job)
-    }
+    } // constructor
 
-    // Generates a unique KPI ID
+    // Function to generate a unique KPI ID
     function _generateKPIId() private view returns (bytes32) {
         return keccak256(abi.encodePacked(block.timestamp, msg.sender));
-    }
+    } // _generateKPIId
 
-    // Creates a new KPI with the provided details, and stores it in the mapping.
+    // Function to create a new KPI with the provided details, and stores it in the mapping
     function createKPIPoint(uint256 _escrowId, uint256 _kpiThreshold, string calldata _kpiPath, string calldata _kpiUrl) external override returns (bytes32) {
         // Ensure the escrow exists
         require(_escrowId < escrow.getNextEscrowId(), "Escrow does not exist.");
@@ -68,6 +81,7 @@ contract KPI is IKPI,ChainlinkClient, ConfirmedOwner {
 
         _kpiThreshold = _kpiThreshold  * 10**18;
 
+        // Create a new KPI
         KPIInfo memory newKPI = KPIInfo({
             kpiId: kpiId,
             kpiThreshold: _kpiThreshold,
@@ -81,6 +95,7 @@ contract KPI is IKPI,ChainlinkClient, ConfirmedOwner {
             requestId: 0
         });
 
+        // Store the new KPI in the mapping
         kpis[kpiId] = newKPI;
         escrowKPIs[_escrowId].push(kpiId);
 
@@ -90,41 +105,45 @@ contract KPI is IKPI,ChainlinkClient, ConfirmedOwner {
         return kpiId;
     } // end of createKPIPoint
 
-
-    // Manually updates the KPI value and checks if the KPI has been violated.
+    // Function to manually update the KPI value and checks if the KPI has been violated
     function setKPIPointValue(bytes32 _kpiId, uint256 _newValue) external override {
         KPIInfo storage kpi = kpis[_kpiId];
         require(kpi.kpiId != 0, "KPI does not exist.");
 
+        // Update the KPI value
         kpi.kpiValue = _newValue;
         kpi.kpiViolationStatus = _newValue >= kpi.kpiThreshold;
         if (kpi.kpiViolationStatus) {
             kpi.kpiViolationPaid = escrow.fulfillEscrow(kpi.escrowId);
         }
 
+        // Emit the KPIUpdated event
         emit KPIUpdated(_kpiId, _newValue, kpi.kpiViolationStatus);
         emit KPIUpdated(_kpiId, _newValue, kpi.kpiViolationPaid);
     } // end of setKPIPointValue
 
+    // Function to call the fetchKPIPointValue function with the KPI path and URL
     function callFetchKPIPointValue(bytes32 _kpiId) external {
         KPIInfo storage kpi = kpis[_kpiId];
         kpi.requestId = fetchKPIPointValue(kpi.kpiPath, kpi.kpiUrl);
-    }
+    } // callFetchKPIPointValue
 
-    function callGetfulfilledPointValue(bytes32 _kpiId) external {
+    // Function to get the fulfilled point value and update the KPI value and violation status
+    function callGetfulfilledPointValue(bytes32 _kpiId) internal {
         KPIInfo storage kpi = kpis[_kpiId];
-        kpi.kpiValue = this.getfulfilledPointValue(kpi.requestId);
+        kpi.kpiValue = requestIdToFulfillment[kpi.requestId].pointValue;
 
         kpi.kpiViolationStatus = kpi.kpiValue >= kpi.kpiThreshold;
         if (kpi.kpiViolationStatus) {
             kpi.kpiViolationPaid = escrow.fulfillEscrow(kpi.escrowId);
         }
 
+        // Emit the KPIUpdated event
         emit KPIUpdated(_kpiId, kpi.kpiValue, kpi.kpiViolationStatus);
         emit KPIUpdated(_kpiId, kpi.kpiValue, kpi.kpiViolationPaid);
-    }
+    } // callGetfulfilledPointValue
 
-    // Deletes a KPI using the KPIId.
+    // Function to delete a KPI using the KPI ID
     function deleteKPIPoint(bytes32 _kpiId) external {
         KPIInfo storage kpi = kpis[_kpiId];
         require(kpi.kpiId != 0, "KPI does not exist.");
@@ -156,11 +175,12 @@ contract KPI is IKPI,ChainlinkClient, ConfirmedOwner {
         emit KPIDeleted(_kpiId, escrowId);
     } // end of deleteKPIPoint
 
+    // Function to return an array of KPI IDs for a given escrow ID
     function getEscrowKPIs(uint256 _escrowId) external view returns (bytes32[] memory) {
         return escrowKPIs[_escrowId];
-    }
+    } // getEscrowKPIs
 
-    // Gets the KPI details for the given kpiId.
+    // Function to return the KPI details for a given KPI ID
     function getKPILastValue(bytes32 _kpiId) external view override returns (
         uint256 kpiThreshold,
         uint256 kpiValue,
@@ -180,6 +200,7 @@ contract KPI is IKPI,ChainlinkClient, ConfirmedOwner {
         kpiViolationPaid = kpi.kpiViolationPaid;
     } // end of getKPILastValue
 
+    // Function to send a GET request to the specified URL using the Chainlink network and return the request ID
     function fetchKPIPointValue(string memory _kpiPath, string memory _kpiUrl) private returns (bytes32 requestId) {
         Chainlink.Request memory req = buildChainlinkRequest(
             jobId,
@@ -201,25 +222,25 @@ contract KPI is IKPI,ChainlinkClient, ConfirmedOwner {
 
         // Sends the request
         return sendChainlinkRequest(req, fee);
-    }
+    } // fetchKPIPointValue
 
+    // Function to update the point value and fulfillment status when the Chainlink network fulfills the request
     function fulfill(bytes32 _requestId, uint256 _pointValue) public recordChainlinkFulfillment(_requestId) {
         requestIdToFulfillment[_requestId].pointValue = _pointValue;
         requestIdToFulfillment[_requestId].isFulfilled = true;
+
+        // Call callGetfulfilledPointValue after the KPI point value has been updated
+        callGetfulfilledPointValue(_requestId);
         
         emit FetchKPIPointV(_requestId, _pointValue);
-    }
+    } // fulfill
 
-    function getfulfilledPointValue(bytes32 requestId) external view returns (uint256) {
-        require(requestIdToFulfillment[requestId].isFulfilled, "Not yet fulfilled");
-        return requestIdToFulfillment[requestId].pointValue;
-    }
-
+    // Function to withdraw LINK tokens from the contract
     function withdrawLink() public onlyOwner {
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
         require(
             link.transfer(msg.sender, link.balanceOf(address(this))),
             "Unable to transfer"
         );
-    }
-}
+    } // withdrawLink
+} // KPI
