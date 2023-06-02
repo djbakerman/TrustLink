@@ -19,9 +19,6 @@ interface IKPI {
     // Calls the function to fetch the KPI point value.
     function callFetchKPIPointValue(bytes32 _kpiId) external;
 
-    // Calls the function to get the fulfilled point value.
-    function callGetfulfilledPointValue(bytes32 _kpiId) external;
-
     // Deletes a KPI using the KPIId.
     function deleteKPIPoint(bytes32 _kpiId) external;
 
@@ -38,9 +35,6 @@ interface IKPI {
         bool kpiViolationPaid
     );
 
-    // Returns the fulfilled point value for the given requestId.
-    function getfulfilledPointValue(bytes32 requestId) external view returns (uint256);
-
     // Allows the contract owner to withdraw LINK tokens.
     function withdrawLink() external;
-}
+} IKPI
