@@ -37,4 +37,4 @@ interface IKPI {
 
     // Allows the contract owner to withdraw LINK tokens.
     function withdrawLink() external;
-} IKPI
+} // IKPI
