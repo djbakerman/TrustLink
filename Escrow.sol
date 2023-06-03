@@ -208,7 +208,7 @@ contract Escrow is IEscrow {
         require(!escrow.isFulfilled, "Escrow is already fulfilled.");
         // Check if the sender is the sender, a recipient, the contract itself, or the KPI contract of the escrow
         require(isRecipient(msg.sender, escrow.recipients) || msg.sender == escrow.sender || msg.sender == address(this) || msg.sender == escrow.kpiContract, "Only sender or recipients can execute this function.");
-        address_escrowContractAddress = address(this);
+        address _escrowContractAddress = address(this);
 
         // If the KPI contract does not exist, create a new one
         if (escrow.kpiContract == address(0)) {
