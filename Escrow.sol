@@ -51,6 +51,12 @@ contract Escrow is IEscrow {
         // Check if there is at least one recipient
         require(_recipients.length > 0, "At least one recipient is required.");
 
+        // Get the KPI contract address or creates a new KPI contract if none exists
+        address kpiContractAddress = address(0);
+        if (nextEscrowId != 0) {
+            kpiContractAddress = escrows[0].kpiContract;
+        } 
+
         // Create a new escrow
         EscrowInfo memory newEscrow = EscrowInfo({
             sender: payable(msg.sender),
@@ -58,7 +64,7 @@ contract Escrow is IEscrow {
             amount: msg.value,
             negotiated_amount: 0,
             isFulfilled: false,
-            kpiContract: address(0)
+            kpiContract: kpiContractAddress
         });
 
         // Set the agreement status of all recipients to false
@@ -199,6 +205,8 @@ contract Escrow is IEscrow {
     } // getNextEscrowId
 
     // Function to get or create a KPI for an escrow
+    // Some use cases may require unique KPI contract assigned to each escrow
+    // Our example assumes the same KPI contract for each escrow
     function getOrCreateKPIForEscrow(uint256 _escrowId) public returns (address) {
         // Check if the escrow ID is valid
         require(_escrowId < nextEscrowId, "Invalid escrow ID.");
