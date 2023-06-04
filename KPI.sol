@@ -372,7 +372,7 @@ contract KPI is IKPI, KeeperCompatibleInterface, ChainlinkClient, ConfirmedOwner
             adminAddress: msg.sender, // The address of the admin
             checkData: "0x", // Any data that the checkUpkeep function requires
             offchainConfig: "0x", // Any off-chain configuration data
-            amount: 100000000000000000 // The amount of LINK to be used for the upkeep
+            amount: 5000000000000000000 // Needed 5 LINK minimum
         });
 
         upkeepID = registrar.registerUpkeep(params);
