@@ -5,17 +5,22 @@ pragma solidity ^0.8.0;
 
 // This is the interface for the KPI contract
 interface IKPI {
+    // Event emitted when a new KPI is created or updated
+    event KPICreatedOrUpdated(bytes32 indexed kpiId, uint256 kpiThreshold, string kpiPath, string kpiUrl);
     // Event emitted when a new KPI is created
     event KPICreated(bytes32 indexed kpiId, uint256 kpiThreshold, string kpiPath, string kpiUrl);
     // Event emitted when a KPI is updated
-    event KPIUpdated(bytes32 indexed kpiId, uint256 newValue, bool violationStatus);
+    event KPIPointUpdated(bytes32 indexed kpiId, uint256 newValue, bool violationStatus, bool violationPaid);
     // Event emitted when a KPI is deleted
     event KPIDeleted(bytes32 indexed kpiId, uint256 escrowId);
     // Event emitted when a KPI point value is fetched
-    event FetchKPIPointV(bytes32 indexed requestId, uint256 pointValue);
+    event FetchKPIPointV(bytes32 kpiId, bytes32 indexed requestId, uint256 pointValue);
 
     // Creates a new KPI point with the given details
     function createKPIPoint(uint256 _escrowId, uint256 _kpiThreshold, string calldata _kpiPath, string calldata _kpiUrl) external returns (bytes32);
+
+    // Updates an existing KPI point with the given details
+    function updateKPIPoint(bytes32 _kpiId, uint256 _escrowId, uint256 _kpiThreshold, string calldata _kpiPath, string calldata _kpiUrl) external;
 
     // Manually sets the value of a KPI point and checks if the KPI has been violated
     function setKPIPointValue(bytes32 _kpiId, uint256 _newValue) external;
@@ -36,7 +41,8 @@ interface IKPI {
         string memory kpiPath,
         string memory kpiUrl,
         bool kpiViolationStatus,
-        bool kpiViolationPaid
+        bool kpiViolationPaid,
+        uint256 timestamp
     );
 
     // Allows the contract owner to withdraw LINK tokens
