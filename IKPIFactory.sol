@@ -3,33 +3,30 @@
 
 pragma solidity ^0.8.0;
 
-// This is the interface for the Escrow contract
-interface IEscrow {
-    // Event emitted when a new escrow is created
-    event EscrowCreated(uint256 indexed escrowId, address indexed sender, uint256 amount);
-    // Event emitted when an escrow is fulfilled
-    event EscrowFulfilled(uint256 indexed escrowId);
-    // Event emitted when a new recipient is added to an escrow
-    event RecipientAdded(uint256 indexed escrowId, address indexed recipient);
-    // Event emitted when a recipient changes their agreement status
-    event RecipientAgreementChanged(uint256 indexed escrowId, address indexed recipient, bool agrees);
+import "./KPI.sol";
 
-    // Creates a new escrow with the given recipients and amount
-    function createEscrow(address[] memory _recipients, uint256 _amount) external payable returns (uint256);
-    // Negotiates the amount of an existing escrow
-    function negotiateEscrow(uint256 _escrowId, uint256 _negotiatedAmount) external;
-    // Fulfills an existing escrow
-    function fulfillEscrow(uint256 _escrowId) external returns (bool);
-    // Checks if an escrow is fulfilled
-    function isEscrowFulfilled(uint256 _escrowId) external view returns (bool);
-    // Sets the agreement status of a recipient for a given escrow
-    function setRecipientAgrees(uint256 _escrowId, bool _agrees) external;
-    // Gets the agreement status of a recipient for a given escrow
-    function getRecipientAgrees(uint256 _escrowId, address _recipient) external view returns (bool);
-    // Gets the next escrow ID
-    function getNextEscrowId() external view returns (uint256);
-    // Checks if all recipients of an escrow have agreed
-    function areAllRecipientsAgreed(uint256 _escrowId) external view returns (bool);
-    // Gets or creates a KPI for a given escrow
-    function getOrCreateKPIForEscrow(uint256 _escrowId) external returns (address);
-} IEscrow
+// This contract is a factory for creating and managing KPI contracts
+contract KPIFactory {
+    // Mapping to store KPI contracts for each escrow
+    mapping(address => mapping(uint256 => address)) public kpiContracts;
+
+    // Event emitted when a new KPI contract is created
+    event KPIContractCreated(uint256 indexed escrowId, address indexed escrowAddress, address kpiContract);
+
+    // Function to get or create a KPI contract for a given escrow
+    function getOrCreateKPIForEscrow(uint256 _escrowId, address _escrowAddress, address _sender) public returns (address) {
+        // If there is no KPI contract for the given escrow, create a new one
+        if (kpiContracts[_escrowAddress][_escrowId] == address(0)) {
+            KPI newKPI = new KPI(_escrowAddress, _sender);
+            kpiContracts[_escrowAddress][_escrowId] = address(newKPI);
+
+            // Emit the event when a new KPI contract is created
+            emit KPIContractCreated(_escrowId, _escrowAddress, address(newKPI));
+
+            return address(newKPI);
+        } else {
+            // If a KPI contract for the given escrow already exists, return its address
+            return kpiContracts[_escrowAddress][_escrowId];
+        }
+    }
+} // KPIFactory
