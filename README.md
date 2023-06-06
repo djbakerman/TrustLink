@@ -24,9 +24,16 @@ How?
 
 TrustLink uses several smart contracts to achieve its functionality:
 
-IEscrow: This is an interface for the Escrow contract, which manages the creation, negotiation, fulfillment, and recipient agreement status of escrows.
-IKPI: This is an interface for the KPI contract, which manages the creation, updating, deletion, and fetching of KPI points.
+Escrow: The Escrow contract is a crucial part of the TrustLink platform. It's responsible for managing the creation, negotiation, fulfillment, and recipient agreement status of escrows. This contract holds funds in a secure state until certain conditions are met, as defined by the service level agreements (SLAs).  When a KPI violation occurs, as detected by the KPI contract, the Escrow contract initiates the process of transferring funds from the escrow account to the designated recipient. This could be the service recipient in case of an SLA violation, or back to the service provider if the SLA is met successfully.
+
 KPI: This is the main contract that interacts with the Chainlink network to fetch data from an external API. It manages the creation, updating, deletion, and fetching of KPI points and checks if a KPI has been violated.
+
+Escrow Factory: The EscrowFactory contract is responsible for creating and managing multiple instances of the Escrow contract. Each instance corresponds to a unique escrow agreement between two parties.
+
+IEscrow: This is an interface for the Escrow contract, which manages the creation, negotiation, fulfillment, and recipient agreement status of escrows.
+
+IKPI: This is an interface for the KPI contract, which manages the creation, updating, deletion, and fetching of KPI points.
+
 KPIFactory: This is a factory contract that manages the creation and retrieval of KPI contracts for each escrow.
 
 Basic Instructions:
