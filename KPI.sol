@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 
 import "./IKPI.sol";
 import "./IEscrow.sol";
-import "./KPIProxy.sol";
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
