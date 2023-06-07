@@ -4,7 +4,9 @@ Synopsis:
 
 TrustLink is on a mission to bring transparency and fairness into the world of service level agreements. We believe that trust is the cornerstone of any successful business relationship, and we're here to ensure that trust is never compromised.
 
-Our platform is designed to keep service providers on their toes, encouraging them to always strive for excellence. With TrustLink, they know that their performance is continuously monitored against agreed-upon KPIs. If they meet or exceed these KPIs, they build trust and reputation. If they fall short, there are financial consequences, ensuring accountability.
+Our platform is designed to keep service providers on their toes, encouraging them to always strive for excellence. With TrustLink, they know that their performance is continuously monitored against agreed-upon KPIs. If they meet or exceed these KPIs, they build trust and reputation. If they fall short, there are financial consequences, ensuring accountability. 
+
+For the purpose of the Hackathon, we used the Azure Internet of Things Simulator to simulate our test point data but the real world any JSON otput should be sufficient.
 
 But TrustLink isn't just about keeping service providers in check. It's also about giving clients peace of mind. With our platform, they can see exactly how their service providers are performing, eliminating any guesswork or disputes.
 
