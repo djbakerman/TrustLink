@@ -38,28 +38,26 @@ IKPI: This is an interface for the KPI contract, which manages the creation, upd
 
 KPIFactory: This is a factory contract that manages the creation and retrieval of KPI contracts for each escrow.
 
-Basic Instructions:
+Deployement and usage instructions (NOTE: This is for Sepolia Testnet):
 
-Step 1: Connect Your Wallet
-First, you'll need to connect your MetaMask wallet. This is a secure and user-friendly way to manage your Ethereum transactions. If you don't have a MetaMask wallet yet, you can download it as a browser extension and set up an account.
+Step 1: Compile KPIFactory and then deploy EscrowFactory passing the KPIFactory's address as the constructor.
 
-Step 2: Access the TrustLink Platform
-Once your wallet is connected, navigate to the TrustLink platform. Here, you'll be able to interact with our smart contracts and manage your service level agreements (SLAs).
+Step 2: In the EscrowFactory, call the getOrCreateEscrowAccount
 
-Step 3: Create or Access an Escrow Account
-Click on the getOrCreateEscrowAccount button. This will link the Escrow.sol contract to your MetaMask wallet. You'll then be presented with the methods and variables of the Escrow.sol smart contract.
+Step 3: Use the Escrow contrat at the address provided by the escrow factory's getOrCreateEscrowAccount
 
-Step 4: Fund Your Escrow
-Next, you'll need to fund your escrow. You can do this by interacting with the createEscrow function. This will transfer funds from your wallet to the escrow account.
+Step 4: Using the Escrow contract, createEscrow.  Pass the array of recipient addresses and the escrow amount in wei. Ensure the sender has the same amount of wei.
 
-Step 5: Link the KPI Contract
-Click on getOrCreateKPIForEscrow. This will link the KPI.sol contract to the corresponding escrow ID. You'll then be presented with the methods and variables of the KPI.sol smart contract.
+Step 5a: Either have all the recipents agree now or later by calling the setRecipientAgrees to true for the given escrow id.  The escrow will not fulfill without areAllRecipientsAgreed returning true.
+Step 5b: Call the getOrCreateKPIForEscrow with the escrow id.  The first escrow is 0.
 
-Step 6: Fund the KPI Contract
-Before setting your KPIs, you'll need to fund the KPI contract with LINK tokens. This is necessary for the contract to interact with the Chainlink network. You can do this by interacting with the fundKPIContract function.
+Step 6: Use the KPI contract at the address provided by the getOrCreateKPIForEscrow for the given escrow id.   Note: To find the KPI contract address, call the "escrows" function and it will return the KPI contract address.
 
-Step 7: Set Your KPIs
-Now, it's time to set your key performance indicators (KPIs). Enter your KPIs into the platform. The KPI.sol contract will then create a Chainlink for monitoring the KPIs on a schedule.
+Step 7: Fund the KPI contract with LINK.  10 LINK is a good starting point.
 
-Step 8: Monitor Your KPIs
-If any Chainlink oracle returns a KPI violation, it will notify the KPI.sol contract. The contract will then initiate the fulfillEscrow function of the Escrow.sol contract, which will proceed with the escrow fulfillment process.
+Step 8: Call the createKPIPoint function with the relevant point data. For the demo used: https://trustlinkstorage.blob.core.windows.net/trustlinktest/trustlink-dev/01/2023/0601/2249.json, "Body,Temperature", 80, 0
+Note: Calling getEscrowKPIs with escrow id will display all the KPIs created for the given escrow.
+
+Step 9: Register the KPI contract to the ChainLink Keeper network by calling the registerUpkeep function.
+
+Use the other KPI functions as necessary, for example to change/delete KPI points.
