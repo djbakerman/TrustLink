@@ -60,7 +60,7 @@ Note: Use the other `KPI` functions as necessary, for example to change/delete `
 
 ## Appendix
 
-Below is the output from the Azure IOT Simulator, we are looking for the temperature point value:
+Below is the output from the Azure IOT Simulator (Under/Over Threshold), we are looking for the temperature point value:
 ```
 curl https://trustlinkstorage.blob.core.windows.net/trustlinktest/trustlink-dev/01/2023/0601/2249.json
 ```
@@ -87,6 +87,12 @@ curl https://trustlinkstorage.blob.core.windows.net/trustlinktest/trustlink-dev/
     "time": "2023-06-01T22:49:02.3244466Z"
   }
 }
+```
+```
+curl https://trustlinkstorage.blob.core.windows.net/trustlinktest/trustlink-dev/01/2023/0521/0155.json
+```
+```
+{"EnqueuedTimeUtc":"2023-05-21T01:55:32.1850000Z","Properties":{},"SystemProperties":{"correlationId":"e4f56a91-a748-4cf9-aefc-87c78e5e1515","connectionDeviceId":"sim000001","connectionAuthMethod":"{\"scope\":\"hub\",\"type\":\"sas\",\"issuer\":\"iothub\",\"acceptingIpFilterRule\":null}","connectionDeviceGenerationId":"638183247685915344","contentType":"application/json","contentEncoding":"utf-8","enqueuedTime":"2023-05-21T01:55:32.1850000Z"},"Body":{ "deviceId": "sim000001", "Temperature": 81.11880976758842, "PowerAvail": 0, "time": "2023-05-21T01:55:32.1913165Z" }}
 ```
 
 Below is the output of a `KPI's` point value:
