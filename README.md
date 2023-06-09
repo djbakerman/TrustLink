@@ -74,3 +74,14 @@ curl https://trustlinkstorage.blob.core.windows.net/trustlinktest/trustlink-dev/
 
 {"EnqueuedTimeUtc":"2023-06-01T22:49:02.5130000Z","Properties":{},"SystemProperties":{"correlationId":"ab6d0b20-a79d-4a30-aaf2-e68e3b0ddf0f","connectionDeviceId":"sim000001","connectionAuthMethod":"{\"scope\":\"hub\",\"type\":\"sas\",\"issuer\":\"iothub\",\"acceptingIpFilterRule\":null}","connectionDeviceGenerationId":"638183247685915344","contentType":"application/json","contentEncoding":"utf-8","enqueuedTime":"2023-06-01T22:49:02.5130000Z"},"Body":{ "deviceId": "sim000001", "Temperature": 79.67345610012927, "PowerAvail": 1, "time": "2023-06-01T22:49:02.3244466Z" }}
 
+
+Below is the output of a KPI's point value:
+0: uint256: kpiThreshold 80000000000000000000
+1: uint256: kpiValue 79673456100129270000
+2: string: kpiPath Body,Temperature
+3: string: kpiUrl https://trustlinkstorage.blob.core.windows.net/trustlinktest/trustlink-dev/01/2023/0601/2249.json
+4: bool: kpiViolationStatus false
+5: bool: kpiViolationPaid false
+6: uint256: timestamp 1686273852
+
+
