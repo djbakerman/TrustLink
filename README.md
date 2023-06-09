@@ -76,12 +76,12 @@ curl https://trustlinkstorage.blob.core.windows.net/trustlinktest/trustlink-dev/
 
 
 Below is the output of a KPI's point value:
-0: uint256: kpiThreshold 80000000000000000000
-1: uint256: kpiValue 79673456100129270000
-2: string: kpiPath Body,Temperature
-3: string: kpiUrl https://trustlinkstorage.blob.core.windows.net/trustlinktest/trustlink-dev/01/2023/0601/2249.json
-4: bool: kpiViolationStatus false
-5: bool: kpiViolationPaid false
-6: uint256: timestamp 1686273852
+uint256: kpiThreshold 80000000000000000000
+uint256: kpiValue 79673456100129270000
+string: kpiPath Body,Temperature
+string: kpiUrl https://trustlinkstorage.blob.core.windows.net/trustlinktest/trustlink-dev/01/2023/0601/2249.json
+bool: kpiViolationStatus false
+bool: kpiViolationPaid false
+uint256: timestamp 1686273852
 
 
