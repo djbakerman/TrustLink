@@ -53,11 +53,24 @@ Step 5b: Call the getOrCreateKPIForEscrow with the escrow id.  The first escrow 
 
 Step 6: Use the KPI contract at the address provided by the getOrCreateKPIForEscrow for the given escrow id.   Note: To find the KPI contract address, call the "escrows" function and it will return the KPI contract address.
 
-Step 7: Fund the KPI contract with LINK.  10 LINK is a good starting point.
+Step 7: Fund the KPI contract with LINK.  10 LINK is a good starting point. Since this KPI polls every 15 minutes continuously, you'll want to routinely check and refund the LINK in the Keeper network.
 
 Step 8: Call the createKPIPoint function with the relevant point data. For the demo used: https://trustlinkstorage.blob.core.windows.net/trustlinktest/trustlink-dev/01/2023/0601/2249.json, "Body,Temperature", 80, 0
 Note: Calling getEscrowKPIs with escrow id will display all the KPIs created for the given escrow.
 
 Step 9: Register the KPI contract to the ChainLink Keeper network by calling the registerUpkeep function.
+Note: Use the other KPI functions as necessary, for example to change/delete KPI points.
 
-Use the other KPI functions as necessary, for example to change/delete KPI points.
+Step 10: To verify the KPI has been created, call the getEscrowKPIs function with the escrow id.  (0 in our example). With the KPI ID, call the getKPILastValue. 
+
+Step 11: The ChainLink Keeper will continue to poll the point(s) until the value of a KPI point exceed the threshold OR unless the "Pause" function is called. The Pause function will pause the keeper.
+
+Step 12: Once the KPI point has exceeded the KPI threshold, the Escrow is triggered and the funds are automatically released to the recipients.  This can be verified by calling the isEscrowFulfilled or escrows function.
+
+Appendix:
+
+Below is the output from the Azure IOT Simulator, we are looking for the temperature point value:
+curl https://trustlinkstorage.blob.core.windows.net/trustlinktest/trustlink-dev/01/2023/0601/2249.json
+
+{"EnqueuedTimeUtc":"2023-06-01T22:49:02.5130000Z","Properties":{},"SystemProperties":{"correlationId":"ab6d0b20-a79d-4a30-aaf2-e68e3b0ddf0f","connectionDeviceId":"sim000001","connectionAuthMethod":"{\"scope\":\"hub\",\"type\":\"sas\",\"issuer\":\"iothub\",\"acceptingIpFilterRule\":null}","connectionDeviceGenerationId":"638183247685915344","contentType":"application/json","contentEncoding":"utf-8","enqueuedTime":"2023-06-01T22:49:02.5130000Z"},"Body":{ "deviceId": "sim000001", "Temperature": 79.67345610012927, "PowerAvail": 1, "time": "2023-06-01T22:49:02.3244466Z" }}
+
